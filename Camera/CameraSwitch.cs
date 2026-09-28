@@ -5,39 +5,70 @@ public class CameraSwitch : MonoBehaviour
     public Camera tpsCamera;
     public Camera fpsCamera;
 
-    public MonoBehaviour tpsController;
-    public MonoBehaviour fpsController;
+    public CameraFollowTPS tpsController;
+    public FPSCameraLook fpsController;
 
-    private bool isFPS = false;
+    [Header("Initial View")]
+    [SerializeField] private bool startInFirstPerson = true;
+
+    private bool isFPS;
 
     void Start()
     {
-        if (tpsCamera == null || fpsCamera == null || tpsController == null || fpsController == null)
-        {
-
-            enabled = false;
-            return;
-        }
-        tpsCamera.enabled = true;
-        fpsCamera.enabled = false;
-
-        tpsController.enabled = true;
-        fpsController.enabled = false;
+        SetMode(startInFirstPerson);
     }
 
     void Update()
     {
+        if (Time.timeScale <= 0f)
+            return;
+
         if (Input.GetKeyDown(KeyCode.C))
         {
-            isFPS = !isFPS;
-
-            tpsCamera.enabled = !isFPS;
-            fpsCamera.enabled = isFPS;
-
-            tpsController.enabled = !isFPS;
-            fpsController.enabled = isFPS;
+            SetMode(!isFPS);
         }
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+    }
+
+    void SetMode(bool toFPS)
+    {
+        if (tpsCamera == null || fpsCamera == null ||
+            tpsController == null || fpsController == null)
+        {
+            Debug.LogError("CameraSwitch references are incomplete.", this);
+            enabled = false;
+            return;
+        }
+
+        float pitch;
+        float yaw;
+
+        if (isFPS)
+        {
+            pitch = fpsController.GetPitch();
+            yaw = fpsController.GetYaw();
+        }
+        else
+        {
+            pitch = tpsController.GetPitch();
+            yaw = tpsController.GetYaw();
+        }
+
+        isFPS = toFPS;
+
+        tpsCamera.gameObject.SetActive(!isFPS);
+        fpsCamera.gameObject.SetActive(isFPS);
+
+        tpsController.enabled = !isFPS;
+        fpsController.enabled = isFPS;
+
+        if (isFPS)
+        {
+            fpsController.SetLook(pitch, yaw);
+        }
+        else
+        {
+            tpsController.SetLook(pitch, yaw);
+            tpsController.SnapToTarget();
+        }
     }
 }
