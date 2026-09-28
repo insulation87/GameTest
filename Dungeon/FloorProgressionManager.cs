@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 using MedievalDungeonKit;
 
 public class FloorProgressionManager : MonoBehaviour
@@ -24,10 +25,18 @@ public class FloorProgressionManager : MonoBehaviour
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Bootstrap()
     {
-        if (FindFirstObjectByType<Player>() == null || FindFirstObjectByType<DungeonMarker>() == null)
-            return;
+        EnsureInstance();
+    }
 
-        if (FindFirstObjectByType<FloorProgressionManager>() == null)
+    public static FloorProgressionManager EnsureInstance()
+    {
+        if (Instance != null)
+            return Instance;
+        if (FindFirstObjectByType<Player>() == null || FindFirstObjectByType<DungeonMarker>() == null)
+            return null;
+
+        FloorProgressionManager existing = FindFirstObjectByType<FloorProgressionManager>();
+        return existing != null ? existing :
             new GameObject("Floor Progression Manager").AddComponent<FloorProgressionManager>();
     }
 
@@ -59,6 +68,66 @@ public class FloorProgressionManager : MonoBehaviour
             if (bossSpawner != null)
                 bossSpawner.SpawnBoss();
         }
+    }
+
+    public bool TryPrepareBossTest(Player player, out BossController boss,
+        out Vector3 playerPosition, out Quaternion playerRotation)
+    {
+        boss = null;
+        playerPosition = default;
+        playerRotation = Quaternion.identity;
+        DungeonMarker marker = FindBossMarker();
+        if (player == null || marker == null || bossSpawner == null)
+        {
+            Debug.LogWarning("無法傳送：目前場景沒有首領房間或首領生成器。", this);
+            return false;
+        }
+
+        DungeonRoomBoundary room = DungeonRoomBoundary.FindContaining(marker.transform.position);
+        if (room == null)
+        {
+            Debug.LogWarning("無法傳送：找不到首領房間的安全邊界。", this);
+            return false;
+        }
+
+        Vector3 bossPosition = bossSpawner.CurrentBoss != null
+            ? bossSpawner.CurrentBoss.transform.position : marker.transform.position;
+        bool foundPosition = false;
+        var filter = new NavMeshQueryFilter { agentTypeID = 0, areaMask = NavMesh.AllAreas };
+        // Search the current floor's room, away from the boss, using a full standing collider.
+        foreach (float distance in new[] { 8f, 12f, 5f })
+        {
+            for (int direction = 0; direction < 12; direction++)
+            {
+                Vector3 offset = Quaternion.Euler(0f, direction * 30f, 0f) * -marker.transform.forward;
+                if (!room.TryGetNavMeshPoint(bossPosition + offset * distance, 1f, filter, out Vector3 ground))
+                    continue;
+                Vector3 facing = bossPosition - ground;
+                facing.y = 0f;
+                if (facing.sqrMagnitude < 16f)
+                    continue;
+                Quaternion rotation = Quaternion.LookRotation(facing);
+                if (!player.TryGetTeleportPosition(ground, rotation, out Vector3 position))
+                    continue;
+                playerPosition = position;
+                playerRotation = rotation;
+                foundPosition = true;
+                break;
+            }
+            if (foundPosition) break;
+        }
+
+        if (!foundPosition)
+        {
+            Debug.LogWarning("無法傳送：首領房間內沒有可安全站立的位置，請確認導覽網格。", this);
+            return false;
+        }
+        if (!bossSpawner.TrySpawnBoss(true))
+            return false;
+
+        boss = bossSpawner.CurrentBoss;
+        SetWallLocked(bossWall, false);
+        return true;
     }
 
     int RequiredFor(int floor)
@@ -117,6 +186,7 @@ public class FloorProgressionManager : MonoBehaviour
 
     static void SetWallLocked(GameObject wall, bool locked)
     {
+        if (wall != null && wall.activeSelf && !locked) GameAudio.UI(GameSound.Unlock);
         if (wall != null)
             wall.SetActive(locked);
     }

@@ -14,6 +14,50 @@ public static class EnemyAppearanceBuilder
     static string output;
     static Scene reviewScene;
 
+    [MenuItem("Tools/Character/Rebuild Boss Appearance")]
+    public static void BuildBoss()
+    {
+        output = Argument("-enemyOutput", DefaultOutput);
+        GameObject source = AssetDatabase.LoadAssetAtPath<GameObject>(
+            "Assets/Script/Player/Resources/Characters/AnimeGirl/AnimeGirlModel.prefab");
+        if (source == null) throw new InvalidDataException("Missing source character for boss appearance.");
+        BuildVariant(source, "Boss", new Color(.92f, .94f, 1f), new Color(.56f, .07f, .13f), new Color(1f, .68f, .2f));
+        AssetDatabase.SaveAssets();
+
+        string review = Argument("-enemyReview", "Temp/BossAppearanceReview");
+        Directory.CreateDirectory(review);
+        reviewScene = EditorSceneManager.NewPreviewScene();
+        try
+        {
+            var models = new List<GameObject>();
+            GameObject guard = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(output + "/Npc1.prefab"));
+            SceneManager.MoveGameObjectToScene(guard, reviewScene);
+            guard.transform.position = new Vector3(-1.2f, 0, 0);
+            models.Add(guard);
+            GameObject boss = UnityEngine.Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(output + "/Boss.prefab"));
+            SceneManager.MoveGameObjectToScene(boss, reviewScene);
+            boss.transform.position = new Vector3(.8f, 0, 0);
+            boss.transform.localScale *= 1.6f;
+            models.Add(boss);
+            Animation animation = boss.GetComponentInChildren<Animation>();
+            animation["Idle"].clip.SampleAnimation(animation.gameObject, 0f);
+            if (!boss.GetComponentsInChildren<SkinnedMeshRenderer>().Any(renderer =>
+                renderer.sharedMesh.subMeshCount == 6 && renderer.sharedMaterials.Any(material => material.name == "BossEmbers")))
+                throw new InvalidDataException("Boss ember armor is missing.");
+            if (boss.GetComponentsInChildren<Collider>().Length != 0)
+                throw new InvalidDataException("Appearance prefab must not introduce extra colliders.");
+            Render(review + "/BossComparison.png", 1400, 1100, new Vector3(0, 1.9f, 0), 2.25f, models);
+            guard.SetActive(false);
+            boss.transform.position = Vector3.zero;
+            boss.transform.rotation = Quaternion.Euler(0, 25f, 0);
+            Render(review + "/Boss.png", 900, 1100, new Vector3(0, 1.9f, 0), 2.25f, models);
+            animation["Cast"].clip.SampleAnimation(animation.gameObject, .55f);
+            Render(review + "/BossCast.png", 900, 1100, new Vector3(0, 1.9f, 0), 2.25f, models);
+            Debug.Log("BOSS_APPEARANCE_OK: horned armor, shoulder spikes, emissive eyes/sigil, enlarged weapons.");
+        }
+        finally { EditorSceneManager.ClosePreviewScene(reviewScene); }
+    }
+
     [MenuItem("Tools/Character/Rebuild NPC and Boss Appearances")]
     public static void Build()
     {

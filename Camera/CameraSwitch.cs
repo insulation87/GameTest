@@ -25,6 +25,7 @@ public class CameraSwitch : MonoBehaviour
 
         if (Input.GetKeyDown(KeyCode.C))
         {
+            GameAudio.Local(GameSound.CameraSwitch);
             SetMode(!isFPS);
         }
     }

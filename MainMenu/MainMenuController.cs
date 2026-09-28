@@ -34,6 +34,7 @@ public class MainMenuController : MonoBehaviour
         BuildResolutionOptions();
 
         volumeSlider.SetValueWithoutNotify(PlayerPrefs.GetFloat(VolumeKey, 1f));
+        volumeSlider.onValueChanged.AddListener(PreviewVolume);
         fullscreenToggle.SetIsOnWithoutNotify(PlayerPrefs.GetInt(FullscreenKey, Screen.fullScreen ? 1 : 0) == 1);
         resolutionDropdown.SetValueWithoutNotify(
             Mathf.Clamp(PlayerPrefs.GetInt(ResolutionKey, FindCurrentResolution()), 0, availableResolutions.Count - 1));
@@ -46,21 +47,25 @@ public class MainMenuController : MonoBehaviour
     {
         if (!Application.CanStreamedLevelBeLoaded(gameSceneName))
         {
+            GameAudio.UI(GameSound.Denied);
             Debug.LogError($"Cannot load '{gameSceneName}'. Add it to Build Settings.");
             return;
         }
 
+        GameAudio.UI(GameSound.StartGame);
         SceneManager.LoadScene(gameSceneName);
     }
 
     public void ShowSettings()
     {
+        GameAudio.UI(GameSound.Open);
         mainPanel.SetActive(false);
         settingsPanel.SetActive(true);
     }
 
     public void ShowMainMenu()
     {
+        if (settingsPanel.activeSelf) GameAudio.UI(GameSound.Close);
         settingsPanel.SetActive(false);
         mainPanel.SetActive(true);
     }
@@ -68,6 +73,7 @@ public class MainMenuController : MonoBehaviour
     public void SaveSettings()
     {
         ApplySettings(true);
+        GameAudio.UI(GameSound.Confirm);
         ShowMainMenu();
     }
 
@@ -78,6 +84,12 @@ public class MainMenuController : MonoBehaviour
 #else
         Application.Quit();
 #endif
+    }
+
+    void PreviewVolume(float value) { AudioListener.volume = Mathf.Clamp01(value); }
+    void OnDestroy()
+    {
+        if (volumeSlider != null) volumeSlider.onValueChanged.RemoveListener(PreviewVolume);
     }
 
     private void BuildResolutionOptions()

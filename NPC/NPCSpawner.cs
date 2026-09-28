@@ -264,6 +264,7 @@ public class NPCSpawner : MonoBehaviour
             closestRoom.playerInside = true;
             if (!closestRoom.activated)
             {
+                GameAudio.Local(GameSound.RoomEnter);
                 closestRoom.activated = true;
                 closestRoom.nextSpawnTime = Time.time + roomSpawnDelay;
             }
@@ -328,6 +329,7 @@ public class NPCSpawner : MonoBehaviour
 
     bool IsValidSpawnPosition(Vector3 position)
     {
+        if (DungeonHazardDirector.IsUnsafe(position, 1f)) return false;
         if (playerTarget != null &&
             Vector3.SqrMagnitude(position - playerTarget.position) <
             minDistanceFromPlayer * minDistanceFromPlayer)

@@ -30,6 +30,16 @@ public class EnemyAI : MonoBehaviour
     public float AttackDamage => EnemyCombatRules.DamageAtLevel(CombatLevel);
     public bool CanUseRanged => EnemyCombatRules.AllowsRanged(CombatLevel);
     public bool IsAttacking => attackRoutine != null;
+    public bool CombatPaused { get; private set; }
+    public void SetCombatPaused(bool paused)
+    {
+        if (CombatPaused == paused) return;
+        CombatPaused = paused;
+        if (!paused) return;
+        if (attackRoutine != null) StopCoroutine(attackRoutine);
+        attackRoutine = null;
+        StopMoving();
+    }
     public bool LastAttackWasRanged { get; private set; }
     public event System.Action AttackPerformed;
     public void ConfigureLevel(int level) { CombatLevel = Mathf.Max(1, level); contactDamage = AttackDamage; }
@@ -46,6 +56,7 @@ public class EnemyAI : MonoBehaviour
     {
         if (health != null && health.EnemyLevel != CombatLevel) ConfigureLevel(health.EnemyLevel);
         if (!CanNavigate()) return;
+        if (CombatPaused) { StopMoving(); return; }
         if (target == null || homeRoom == null || (health != null && health.IsDead)) { StopMoving(); return; }
         PlayerHealth victim = target.GetComponentInParent<PlayerHealth>();
         float distance = Vector3.Distance(transform.position, target.position);
@@ -146,8 +157,9 @@ public class EnemyAI : MonoBehaviour
     }
     void TryBeginAttack(PlayerHealth victim, bool ranged)
     {
-        if (!initialized || IsAttacking || Time.time < nextAttackTime || victim == null || victim.IsDead || (health != null && health.IsDead)) return;
+        if (!initialized || CombatPaused || IsAttacking || Time.time < nextAttackTime || victim == null || victim.IsDead || (health != null && health.IsDead)) return;
         LastAttackWasRanged = ranged;
+        GameAudio.At(ranged ? GameSound.Crossbow : GameSound.Sword, transform.position);
         nextAttackTime = Time.time + Mathf.Max(attackWindup + 0.15f, ranged ? rangedInterval : damageInterval);
         AttackPerformed?.Invoke(); attackRoutine = StartCoroutine(ResolveAttack(victim, ranged));
     }

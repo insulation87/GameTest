@@ -1,5 +1,5 @@
-using System.Collections;
 using UnityEngine;
+using UnityEngine.AI;
 
 public class BossController : MonoBehaviour
 {
@@ -15,15 +15,37 @@ public class BossController : MonoBehaviour
     private Player player;
     private EnemyHealth health;
     private EnemyAI enemyAI;
-    private bool enraged;
-    private Coroutine attackRoutine;
+    public const int PhaseCount = 3;
+    [Min(0.1f)] public float transformationDuration = 1.8f;
+    public int Phase { get; private set; } = 1;
+    public bool IsEnraged => Phase >= 2;
+    public bool IsTransforming => Time.time < transformationEndsAt;
+    public string FormName => Phase == 1 ? "黑鐵暴君" : Phase == 2 ? "赤焰狂戰" : "深淵魔王";
+    public Color FormColor => Phase == 1 ? new Color(.95f, .65f, .2f) :
+        Phase == 2 ? new Color(1f, .2f, .06f) : new Color(.65f, .3f, 1f);
+    private float transformationEndsAt;
+    private float nextBurstTime;
+    private float burstRotation;
+    private NavMeshAgent agent;
+    private float baseSpeed, baseMeleeInterval, baseRangedInterval;
+    private bool initialized;
     public event System.Action BurstFired;
+    public event System.Action PhaseChanged;
 
     public void Initialize(Player targetPlayer, EnemyHealth bossHealth, EnemyAI bossAI)
     {
         player = targetPlayer;
         health = bossHealth;
         enemyAI = bossAI;
+        if (!initialized)
+        {
+            agent = GetComponent<NavMeshAgent>();
+            baseSpeed = agent != null ? agent.speed : 0f;
+            baseMeleeInterval = enemyAI != null ? enemyAI.damageInterval : 1f;
+            baseRangedInterval = enemyAI != null ? enemyAI.rangedInterval : 1.8f;
+            initialized = true;
+        }
+        ApplyCombatForm();
     }
 
     void Awake()
@@ -34,41 +56,74 @@ public class BossController : MonoBehaviour
 
     void Update()
     {
-        if (enraged || health == null || health.IsDead || health.HealthNormalized > 0.5f)
-            return;
-
-        enraged = true;
-        // Enrage changes the attack pattern, not the level-derived damage.
-        attackRoutine = StartCoroutine(RadialAttackLoop());
+        if (!initialized || health == null || health.IsDead) return;
+        if (enemyAI != null) enemyAI.SetCombatPaused(IsTransforming);
+        if (IsTransforming || Time.timeScale <= 0f || Phase == 1 || Time.time < nextBurstTime) return;
+        if (player == null) player = FindFirstObjectByType<Player>();
+        PlayerHealth victim = player != null ? player.GetComponent<PlayerHealth>() : null;
+        if (victim == null || victim.IsDead) return;
+        FireRadialBurst();
+        float intervalScale = Phase == 2 ? .5f : .25f;
+        nextBurstTime = Time.time + Random.Range(Mathf.Max(.1f, minAttackInterval),
+            Mathf.Max(minAttackInterval, maxAttackInterval)) * intervalScale;
     }
 
-    IEnumerator RadialAttackLoop()
+    // Called synchronously by EnemyHealth before death, so even a lethal hit cannot skip a form.
+    public bool TryAdvancePhase()
     {
-        while (health != null && !health.IsDead)
+        if (!initialized || health == null || health.IsDead || health.CurrentHealth > 0f ||
+            IsTransforming || Phase >= PhaseCount) return false;
+        Phase++;
+        GameAudio.At(GameSound.BossTransform, transform.position);
+        health.SetMaxHealth(health.maxHealth);
+        transformationEndsAt = Time.time + Mathf.Max(.1f, transformationDuration);
+        nextBurstTime = transformationEndsAt + 1f;
+        ApplyCombatForm();
+        if (enemyAI != null) enemyAI.SetCombatPaused(true);
+        PhaseChanged?.Invoke();
+        return true;
+    }
+
+    void ApplyCombatForm()
+    {
+        if (agent != null) agent.speed = baseSpeed * (Phase == 1 ? 1f : Phase == 2 ? 1.1f : 1.2f);
+        float intervalScale = Phase == 1 ? 1f : Phase == 2 ? .8f : .6f;
+        if (enemyAI != null)
         {
-            yield return new WaitForSeconds(Random.Range(minAttackInterval, maxAttackInterval));
-            if (health != null && !health.IsDead)
-                FireRadialBurst();
+            enemyAI.damageInterval = baseMeleeInterval * intervalScale;
+            enemyAI.rangedInterval = baseRangedInterval * intervalScale;
         }
     }
 
     void FireRadialBurst()
     {
+        GameAudio.At(GameSound.BossBurst, transform.position);
         BurstFired?.Invoke();
         Vector3 origin = enemyAI != null ? enemyAI.AttackOrigin : transform.position + Vector3.up * 0.4f;
-        for (int bulletIndex = 0; bulletIndex < bulletsPerBurst; bulletIndex++)
+        int count = Mathf.Max(1, bulletsPerBurst) + (Phase == 3 ? 12 : 0);
+        float levelDamage = EnemyCombatRules.DamageAtLevel(health != null ? health.EnemyLevel : 100);
+        for (int bulletIndex = 0; bulletIndex < count; bulletIndex++)
         {
-            float angle = bulletIndex * (360f / bulletsPerBurst);
+            float angle = burstRotation + bulletIndex * (360f / count);
             Vector3 direction = Quaternion.Euler(0f, angle, 0f) * Vector3.forward;
-            float levelDamage = EnemyCombatRules.DamageAtLevel(health != null ? health.EnemyLevel : 100);
             EnemyProjectile.Launch(origin, direction, bulletSpeed, levelDamage, bulletLifetime, gameObject);
+        }
+        if (Phase == 3)
+        {
+            burstRotation += 360f / count * .5f;
+            if (player != null)
+            {
+                Vector3 aim = player.transform.position - origin;
+                for (int i = -1; i <= 1; i++)
+                    EnemyProjectile.Launch(origin, Quaternion.Euler(0f, i * 12f, 0f) * aim,
+                        bulletSpeed * 1.2f, levelDamage, bulletLifetime, gameObject);
+            }
         }
     }
 
     void OnDisable()
     {
-        if (attackRoutine != null)
-            StopCoroutine(attackRoutine);
+        if (enemyAI != null) enemyAI.SetCombatPaused(false);
     }
 }
 

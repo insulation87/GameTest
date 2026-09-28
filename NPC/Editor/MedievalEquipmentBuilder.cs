@@ -18,7 +18,10 @@ public static class MedievalEquipmentBuilder
         var trim = Material(output, variant + "Trim", boss ? new Color(.95f,.65f,.22f) : new Color(.58f,.42f,.19f));
         var cloth = Material(output, variant + "Heraldry", heraldry);
         var dark = Material(output, variant + "Mail", new Color(.085f,.10f,.12f));
-        Material[] palette = { steel, leather, trim, cloth, dark };
+        Material[] palette = boss
+            ? new[] { steel, leather, trim, cloth, dark,
+                Material(output, "BossEmbers", new Color(3f, .06f, .012f)) }
+            : new[] { steel, leather, trim, cloth, dark };
 
         foreach (SkinnedMeshRenderer skin in model.GetComponentsInChildren<SkinnedMeshRenderer>())
         {
@@ -34,7 +37,7 @@ public static class MedievalEquipmentBuilder
             skin.sharedMesh = Save(mesh, output + "/Meshes/" + variant + "UnderArmor.asset");
             skin.sharedMaterials = slots;
         }
-        var outfit = new Geometry();
+        var outfit = new Geometry(palette.Length);
         var bones = new List<Transform>();
         int Bind(Transform bone) { int index = bones.IndexOf(bone); if (index < 0) { index = bones.Count; bones.Add(bone); } return index; }
         void Sleeve(string side, string upper, string lower, float start, float end, float width, int material)
@@ -46,7 +49,9 @@ public static class MedievalEquipmentBuilder
         Transform hips = Bone("C_Hips"), chest = Bone("C_Chest"), head = Bone("C_Head");
         Vector3 waist = Point(hips) + Vector3.up * .075f;
         Vector3 collar = Point(Bone("C_Neck")) - Vector3.up * .025f;
-        outfit.Tube(waist, collar, new[] {.16f,.195f,.205f,.18f,.105f}, new[] {.12f,.15f,.16f,.135f,.09f}, 0, Bind(chest));
+        outfit.Tube(waist, collar,
+            boss ? new[] {.18f,.23f,.255f,.22f,.12f} : new[] {.16f,.195f,.205f,.18f,.105f},
+            new[] {.12f,.15f,.16f,.135f,.09f}, 0, Bind(chest));
         outfit.Tube(waist - Vector3.up * .025f, waist + Vector3.up * .015f, new[] {.17f,.17f}, new[] {.12f,.12f}, 1, Bind(hips));
         outfit.Beam(waist + new Vector3(-.028f,-.006f,.125f), waist + new Vector3(.028f,-.006f,.125f), .035f,.014f,2,Bind(hips));
         // Front surcoat panel and its gold vertical heraldic stripe.
@@ -56,7 +61,7 @@ public static class MedievalEquipmentBuilder
             outfit.Beam(waist + new Vector3(side*.068f,-.025f,.15f),Point(hips) + new Vector3(side*.068f,-.24f,.15f),.13f,.015f,3,Bind(hips));
         foreach (string side in new[] { "L", "R" })
         {
-            Sleeve(side,"UpperArm","LowerArm",-.07f,.45f,boss ? .112f : .088f,0);
+            Sleeve(side,"UpperArm","LowerArm",-.07f,.45f,boss ? .15f : .088f,0);
             Sleeve(side,"LowerArm","Hand",.36f,.98f,.061f,0);
             Sleeve(side,"UpperLeg","LowerLeg",-.04f,.34f,.102f,0);
             Sleeve(side,"LowerLeg","Foot",.19f,.95f,.067f,0);
@@ -70,20 +75,55 @@ public static class MedievalEquipmentBuilder
             new[] {.112f,.12f,.12f,.113f,.09f,.001f},new[] {.125f,.13f,.13f,.123f,.105f,.001f},0,Bind(head),true);
         outfit.Tube(headOrigin + Vector3.up * .068f,headOrigin + Vector3.up * .099f,new[] {.118f,.118f},new[] {.127f,.127f},4,Bind(head));
         outfit.Beam(headOrigin + new Vector3(0,-.025f,.133f),headOrigin + new Vector3(0,.175f,.124f),.014f,.012f,2,Bind(head));
+        if (boss)
+        {
+            foreach (float sign in new[] { -1f, 1f })
+            {
+                // Swept, tapered horns keep the crown silhouette but make it predatory.
+                Vector3 root = headOrigin + new Vector3(sign * .1f, .15f, -.02f);
+                Vector3 bend = headOrigin + new Vector3(sign * .24f, .34f, -.045f);
+                Vector3 tip = headOrigin + new Vector3(sign * .18f, .59f, -.015f);
+                outfit.Tube(root, bend, new[] { .055f, .04f }, new[] { .05f, .036f }, 0, Bind(head), false, 8);
+                outfit.Tube(bend, tip, new[] { .04f, 0f }, new[] { .036f, 0f }, 2, Bind(head), false, 8);
+                outfit.Beam(headOrigin + new Vector3(sign * .025f, .08f, .136f),
+                    headOrigin + new Vector3(sign * .095f, .099f, .128f), .015f, .016f, 5, Bind(head));
+
+                Transform shoulder = Bone((sign < 0 ? "R" : "L") + "_UpperArm");
+                Vector3 shoulderPoint = Point(shoulder);
+                // Use each shoulder's actual side in rig space instead of assuming the rig's naming convention.
+                float outward = Mathf.Sign(shoulderPoint.x);
+                for (int spike = 0; spike < 3; spike++)
+                {
+                    Vector3 spikeRoot = shoulderPoint + new Vector3(outward * (.06f + spike * .055f), -.07f, -.025f);
+                    Vector3 spikeTip = spikeRoot + new Vector3(outward * (.07f + spike * .025f), .22f - spike * .025f, -.03f);
+                    outfit.Tube(spikeRoot, spikeTip, new[] { .045f, 0f }, new[] { .045f, 0f }, 2, Bind(shoulder), false, 6);
+                }
+            }
+            // A hot, angular sigil on the breastplate repeats the red eye color.
+            Vector3 sigil = Vector3.Lerp(waist, collar, .62f) + Vector3.forward * .197f;
+            foreach (float sign in new[] { -1f, 1f })
+            {
+                outfit.Beam(sigil + Vector3.up * .07f, sigil + Vector3.right * sign * .045f,
+                    .012f, .012f, 5, Bind(chest));
+                outfit.Beam(sigil + Vector3.right * sign * .045f, sigil - Vector3.up * .07f,
+                    .012f, .012f, 5, Bind(chest));
+            }
+        }
         Mesh armorMesh = outfit.Mesh(variant + " Plate Armor", true);
         armorMesh.bindposes = bones.Select(bone => bone.worldToLocalMatrix * rig.localToWorldMatrix).ToArray();
         armorMesh = Save(armorMesh,output + "/Meshes/" + variant + "Armor.asset");
         var armor = new GameObject("Medieval Armor",typeof(SkinnedMeshRenderer)); armor.transform.SetParent(rig,false);
         var renderer = armor.GetComponent<SkinnedMeshRenderer>(); renderer.sharedMesh = armorMesh; renderer.bones = bones.ToArray();
         renderer.rootBone = hips; renderer.sharedMaterials = palette; renderer.updateWhenOffscreen = true;
-        renderer.localBounds = new Bounds(new Vector3(0,.85f,0),new Vector3(2.5f,2.4f,2.5f));
+        renderer.localBounds = new Bounds(new Vector3(0,boss ? 1.05f : .85f,0),new Vector3(2.5f, boss ? 3f : 2.4f,2.5f));
 
         Transform rightHand = Bone("R_Hand"), leftHand = Bone("L_Hand");
         GameObject sword = Weapon("Sword",Sword(),rightHand,palette,output);
-        sword.transform.rotation = rig.rotation * Quaternion.Euler(180,0,0);
-        if (boss) sword.transform.localScale = Vector3.one * 1.2f;
+        sword.transform.rotation = rig.rotation * Quaternion.Euler(180, 0, boss ? -22f : 0f);
+        if (boss) sword.transform.localScale = new Vector3(1.8f, 1.05f, 1.5f);
         GameObject shield = Weapon("Shield",Shield(),leftHand,palette,output);
         shield.transform.rotation = rig.rotation;
+        if (boss) shield.transform.localScale = Vector3.one * 1.15f;
         GameObject crossbow = Weapon("Crossbow",Crossbow(),rightHand,palette,output);
         crossbow.transform.rotation = rig.rotation;
         var muzzle = new GameObject("BoltMuzzle"); muzzle.transform.SetParent(crossbow.transform,false); muzzle.transform.localPosition = new Vector3(0,.07f,.39f);
@@ -99,7 +139,8 @@ public static class MedievalEquipmentBuilder
     {
         Mesh mesh = Save(geometry.Mesh(name,false),output + "/Meshes/" + name + ".asset");
         var weapon = new GameObject(name,typeof(MeshFilter),typeof(MeshRenderer)); weapon.transform.SetParent(parent,false);
-        weapon.GetComponent<MeshFilter>().sharedMesh = mesh; weapon.GetComponent<MeshRenderer>().sharedMaterials = materials;
+        weapon.GetComponent<MeshFilter>().sharedMesh = mesh;
+        weapon.GetComponent<MeshRenderer>().sharedMaterials = materials.Take(mesh.subMeshCount).ToArray();
         return weapon;
     }
     static Geometry Sword()
@@ -158,7 +199,11 @@ public static class MedievalEquipmentBuilder
     {
         readonly List<Vector3> vertices = new List<Vector3>();
         readonly List<BoneWeight> weights = new List<BoneWeight>();
-        readonly List<int>[] triangles = Enumerable.Range(0,5).Select(_=>new List<int>()).ToArray();
+        readonly List<int>[] triangles;
+        public Geometry(int materialCount = 5)
+        {
+            triangles = Enumerable.Range(0, materialCount).Select(_ => new List<int>()).ToArray();
+        }
         public void Beam(Vector3 from,Vector3 to,float width,float depth,int material,int bone=0)
         { Tube(from,to,new[]{width * .7071f,width * .7071f},new[]{depth * .7071f,depth * .7071f},material,bone,false,4); }
         public void Tube(Vector3 from,Vector3 to,float[] width,float[] depth,int material,int bone=0,bool visor=false,int sides=20)
@@ -184,8 +229,8 @@ public static class MedievalEquipmentBuilder
         }
         public Mesh Mesh(string name,bool skin)
         {
-            var mesh=new Mesh {name=name}; mesh.SetVertices(vertices); mesh.subMeshCount=5;
-            for(int slot=0;slot<5;slot++) mesh.SetTriangles(triangles[slot],slot);
+            var mesh=new Mesh {name=name}; mesh.SetVertices(vertices); mesh.subMeshCount=triangles.Length;
+            for(int slot=0;slot<triangles.Length;slot++) mesh.SetTriangles(triangles[slot],slot);
             if(skin) mesh.boneWeights=weights.ToArray(); mesh.RecalculateNormals(); mesh.RecalculateBounds(); return mesh;
         }
     }

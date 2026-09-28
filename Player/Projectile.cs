@@ -153,6 +153,7 @@ public class Projectile : MonoBehaviour
                 ? owner.GetComponentInParent<PlayerHealth>()
                 : null);
         }
+        else GameAudio.At(GameSound.Impact, transform.position);
 
         hasHit = true;
         Destroy(gameObject);
@@ -175,6 +176,7 @@ public class Projectile : MonoBehaviour
 
     void Explode(Vector3 center, PlayerHealth damageSource)
     {
+        GameAudio.At(GameSound.Explosion, center);
         Collider[] hits = Physics.OverlapSphere(
             center,
             explosionRadius,

@@ -141,6 +141,7 @@ public class PlayerHealth : MonoBehaviour
         float absorbedDamage = Mathf.Min(currentArmor, damage);
         currentArmor -= absorbedDamage;
         currentHealth = Mathf.Max(0f, currentHealth - (damage - absorbedDamage));
+        GameAudio.Local(absorbedDamage > 0f ? (currentArmor <= 0f ? GameSound.ArmorBreak : GameSound.ArmorHit) : GameSound.PlayerHurt);
 
         if (currentHealth <= 0f)
             Die();
@@ -161,6 +162,7 @@ public class PlayerHealth : MonoBehaviour
         if (amount <= 0f || IsDead)
             return;
 
+        if (currentHealth < maxHealth) GameAudio.UI(GameSound.Heal);
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
     }
 
@@ -190,6 +192,7 @@ public class PlayerHealth : MonoBehaviour
         if (amount <= 0 || currentLevel >= maxPlayerLevel)
             return;
 
+        int previousLevel = currentLevel;
         currentExperience += amount;
 
         while (currentLevel < maxPlayerLevel &&
@@ -205,6 +208,7 @@ public class PlayerHealth : MonoBehaviour
         if (currentLevel >= maxPlayerLevel)
             currentExperience = 0;
 
+        if (currentLevel > previousLevel) GameAudio.UI(GameSound.LevelUp);
         if (pendingUpgradeChoices > 0 && !IsDead && !IsChoosingUpgrade)
             ShowNextUpgradeChoice();
     }
@@ -221,6 +225,7 @@ public class PlayerHealth : MonoBehaviour
             maxArmor,
             currentArmor + armorRegeneration * Time.deltaTime
         );
+        if (currentArmor >= maxArmor) GameAudio.Local(GameSound.ArmorRestored);
     }
 
     int GetExperienceRequired(int level)
@@ -242,6 +247,7 @@ public class PlayerHealth : MonoBehaviour
 
     void Die()
     {
+        GameAudio.UI(GameSound.PlayerDeath);
         IsDead = true;
 
         if (!respawnOnDeath)
@@ -299,6 +305,7 @@ public class PlayerHealth : MonoBehaviour
 
         ResumeWorldAfterDeath();
         ResetHealth();
+        GameAudio.UI(GameSound.Respawn);
         invincibleUntil = Time.time + respawnInvincibilityDuration;
         SetPlayerControlEnabled(true);
         SetRespawnCanvasVisible(false);
@@ -549,6 +556,7 @@ public class PlayerHealth : MonoBehaviour
 
     void SelectUpgrade(UpgradeOption option)
     {
+        GameAudio.UI(GameSound.Upgrade);
         switch (option.type)
         {
             case UpgradeType.Inventory:

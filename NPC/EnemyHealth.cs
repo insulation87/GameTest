@@ -109,7 +109,11 @@ public class EnemyHealth : MonoBehaviour
         if (damage <= 0f || IsDead)
             return;
 
+        BossController boss = GetComponent<BossController>();
+        if (boss != null && boss.IsTransforming) return;
+
         float actualDamage = Mathf.Min(currentHealth, damage);
+        GameAudio.At(GameSound.EnemyHurt, transform.position);
         currentHealth = Mathf.Max(0f, currentHealth - damage);
 
         if (showDamageNumbers && damageSource != null)
@@ -123,7 +127,10 @@ public class EnemyHealth : MonoBehaviour
         }
 
         if (currentHealth <= 0f)
+        {
+            if (boss != null && boss.TryAdvancePhase()) return;
             Die(damageSource);
+        }
     }
 
     Vector3 GetDamageNumberPosition()
@@ -159,6 +166,8 @@ public class EnemyHealth : MonoBehaviour
 
     void Die(PlayerHealth killer)
     {
+        if (GetComponent<BossController>() != null) GameAudio.UI(GameSound.BossDeath);
+        else GameAudio.At(GameSound.EnemyDeath, transform.position);
         IsDead = true;
         DropExperience();
         TryDropHealthPickup();
@@ -200,22 +209,8 @@ public class EnemyHealth : MonoBehaviour
         float variation = Random.Range(-weaponStatVariation, weaponStatVariation);
         float quality = Mathf.Clamp01(enemyStrength + variation);
         int weaponLevel = GetRandomWeaponLevel();
-        float damage = Mathf.Lerp(minWeaponDamage, maxWeaponDamage, quality);
-        float fireInterval = Mathf.Lerp(slowestFireInterval, fastestFireInterval, quality);
-        float projectileSpeed = Mathf.Lerp(minProjectileSpeed, maxProjectileSpeed, quality);
         WeaponType weaponType = (WeaponType)Random.Range(0, 7);
-        int projectilesPerShot = 1;
-        float spreadAngle = 0f;
-        float explosionRadius = 0f;
-        ApplyWeaponTypeStats(
-            weaponType,
-            ref damage,
-            ref fireInterval,
-            ref projectileSpeed,
-            ref projectilesPerShot,
-            ref spreadAngle,
-            ref explosionRadius
-        );
+        WeaponItem weapon = CreateWeaponItem(weaponType, weaponLevel, quality);
         // The body collider's midpoint is approximately waist height.
         Vector3 dropPosition = transform.position;
         Collider bodyCollider = GetComponent<Collider>();
@@ -239,17 +234,9 @@ public class EnemyHealth : MonoBehaviour
             pickup = pickupObject.AddComponent<WeaponPickup>();
 
         pickup.Initialize(
-            weaponType,
-            weaponLevel,
-            quality,
-            damage,
-            fireInterval,
-            projectileSpeed,
-            projectilesPerShot,
-            spreadAngle,
-            explosionRadius,
-            weaponPickupLifetime
-        );
+            weapon.weaponType, weapon.level, weapon.quality, weapon.damage,
+            weapon.fireInterval, weapon.projectileSpeed, weapon.projectilesPerShot,
+            weapon.spreadAngle, weapon.explosionRadius, weaponPickupLifetime);
         pickup.SetModel();
 
         Rigidbody pickupBody = pickupObject.GetComponent<Rigidbody>();
@@ -265,6 +252,39 @@ public class EnemyHealth : MonoBehaviour
             if (pickupCollider.GetComponentInParent<WeaponPickup>() == pickup)
                 pickupCollider.isTrigger = true;
         }
+    }
+
+    public WeaponItem CreateWeaponItem(WeaponType weaponType, int level, float quality)
+    {
+        quality = Mathf.Clamp01(quality);
+        float damage = Mathf.Lerp(minWeaponDamage, maxWeaponDamage, quality);
+        float fireInterval = Mathf.Lerp(slowestFireInterval, fastestFireInterval, quality);
+        float projectileSpeed = Mathf.Lerp(minProjectileSpeed, maxProjectileSpeed, quality);
+        int projectilesPerShot = 1;
+        float spreadAngle = 0f;
+        float explosionRadius = 0f;
+        ApplyWeaponTypeStats(
+            weaponType,
+            ref damage,
+            ref fireInterval,
+            ref projectileSpeed,
+            ref projectilesPerShot,
+            ref spreadAngle,
+            ref explosionRadius
+        );
+        return new WeaponItem
+        {
+            weaponName = $"{WeaponInventory.GetWeaponTypeName(weaponType)} 等級 {Mathf.Clamp(level, 1, 100)}",
+            weaponType = weaponType,
+            level = Mathf.Clamp(level, 1, 100),
+            quality = quality,
+            damage = damage,
+            fireInterval = fireInterval,
+            projectileSpeed = projectileSpeed,
+            projectilesPerShot = projectilesPerShot,
+            spreadAngle = spreadAngle,
+            explosionRadius = explosionRadius
+        };
     }
 
     int GetRandomWeaponLevel()
@@ -639,6 +659,7 @@ public class ExperiencePickup : MonoBehaviour, IMagneticPickup
 
         collected = true;
         player.AddExperience(experienceAmount);
+        GameAudio.UI(GameSound.Experience);
         Destroy(gameObject);
         return true;
     }
@@ -773,6 +794,7 @@ public class WeaponPickup : MonoBehaviour, IMagneticPickup
 
         if (inventory.AddWeapon(weapon))
         {
+            GameAudio.UI(GameSound.Pickup);
             collected = true;
             Destroy(gameObject);
             return true;

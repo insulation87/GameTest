@@ -23,6 +23,7 @@ public class GrenadeThrower : MonoBehaviour
     private GameObject heldVisual;
     private bool aiming;
     private float fuseStartedAt;
+    private float nextFuseSound;
 
     void Awake()
     {
@@ -51,7 +52,8 @@ public class GrenadeThrower : MonoBehaviour
 
     void Update()
     {
-        if (!IsEquipped)
+        if (!IsEquipped || Time.timeScale <= 0f || (playerHealth != null && playerHealth.IsDead) ||
+            (inventory != null && (inventory.IsOpen || inventory.IsPaused)))
             return;
 
         if (!aiming && Input.GetMouseButtonDown(0))
@@ -64,6 +66,11 @@ public class GrenadeThrower : MonoBehaviour
         DrawTrajectory();
 
         float elapsed = Time.time - fuseStartedAt;
+        if (Time.time >= nextFuseSound)
+        {
+            nextFuseSound = Time.time + Mathf.Lerp(.12f, .8f, Mathf.Clamp01((fuseDuration - elapsed) / fuseDuration));
+            GameAudio.Local(GameSound.Fuse);
+        }
         if (elapsed >= fuseDuration)
         {
             ExplodeInHand();
@@ -83,12 +90,15 @@ public class GrenadeThrower : MonoBehaviour
         }
 
         aiming = true;
+        GameAudio.Local(GameSound.GrenadePin);
         fuseStartedAt = Time.time;
+        nextFuseSound = Time.time + .5f;
         trajectory.enabled = true;
     }
 
     void ThrowGrenade(float remainingFuse)
     {
+        GameAudio.Local(GameSound.GrenadeThrow);
         GetThrowData(out Vector3 origin, out Vector3 velocity);
         ThrownGrenade.Create(
             origin,
@@ -257,6 +267,8 @@ public class GrenadePickup : MonoBehaviour, IMagneticPickup
 
 public class ThrownGrenade : MonoBehaviour
 {
+    private float nextBounceSound;
+    private float detonationTime, nextFuseSound;
     private float damage;
     private float radius;
     private PlayerHealth ownerHealth;
@@ -281,6 +293,8 @@ public class ThrownGrenade : MonoBehaviour
         component.damage = damage;
         component.radius = radius;
         component.ownerHealth = ownerHealth;
+        component.detonationTime = Time.time + fuse;
+        component.nextFuseSound = Time.time + .1f;
         component.Invoke(nameof(Detonate), fuse);
     }
 
@@ -289,12 +303,29 @@ public class ThrownGrenade : MonoBehaviour
         GrenadeExplosion.Explode(transform.position, damage, radius, ownerHealth);
         Destroy(gameObject);
     }
+
+    void Update()
+    {
+        if (Time.timeScale <= 0f || Time.time < nextFuseSound) return;
+        nextFuseSound = Time.time + Mathf.Lerp(.12f, .8f, Mathf.Clamp01((detonationTime - Time.time) / 5f));
+        GameAudio.At(GameSound.Fuse, transform.position);
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (Time.time >= nextBounceSound && collision.relativeVelocity.sqrMagnitude > .5f)
+        {
+            nextBounceSound = Time.time + .12f;
+            GameAudio.At(GameSound.GrenadeBounce, transform.position);
+        }
+    }
 }
 
 public static class GrenadeExplosion
 {
     public static void Explode(Vector3 center, float damage, float radius, PlayerHealth source)
     {
+        GameAudio.At(GameSound.Explosion, center);
         HashSet<EnemyHealth> enemies = new HashSet<EnemyHealth>();
         HashSet<PlayerHealth> players = new HashSet<PlayerHealth>();
         foreach (Collider hit in Physics.OverlapSphere(center, radius, ~0, QueryTriggerInteraction.Ignore))

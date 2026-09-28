@@ -19,12 +19,17 @@ public class EnemyHealthBarUI : MonoBehaviour
     private Canvas healthCanvas;
     private RectTransform fillRect;
     private Text levelText;
+    private BossController boss;
+    private RectTransform[] phaseFills;
+    private Image[] phaseImages;
 
     void Awake()
     {
         health = GetComponent<EnemyHealth>();
         FindFacingTarget();
         BuildHealthBar();
+        if (boss == null) boss = GetComponent<BossController>();
+        if (boss != null) SetBossPhases(boss);
     }
 
     void LateUpdate()
@@ -34,9 +39,22 @@ public class EnemyHealthBarUI : MonoBehaviour
 
         float normalizedHealth = Mathf.Clamp01(health.HealthNormalized);
         fillRect.localScale = new Vector3(normalizedHealth, 1f, 1f);
+        if (boss != null && phaseFills != null)
+        {
+            for (int i = 0; i < phaseFills.Length; i++)
+            {
+                float remaining = i + 1 < boss.Phase ? 0f : i + 1 == boss.Phase ? normalizedHealth : 1f;
+                phaseFills[i].localScale = new Vector3(remaining, 1f, 1f);
+                phaseImages[i].color = i + 1 == boss.Phase ? boss.FormColor :
+                    new Color(.35f, .3f, .4f, .8f);
+            }
+            levelText.text = $"{boss.FormName}　{boss.Phase}/{BossController.PhaseCount}\n" +
+                (boss.IsTransforming ? "型態轉換中" : $"{Mathf.CeilToInt(health.CurrentHealth):N0} / {Mathf.CeilToInt(health.maxHealth):N0}");
+            levelText.color = boss.FormColor;
+        }
 
         if (healthCanvas != null)
-            healthCanvas.enabled = !hideWhenFull || normalizedHealth < 0.999f;
+            healthCanvas.enabled = boss != null || !hideWhenFull || normalizedHealth < 0.999f;
 
         if (facingTarget == null)
             FindFacingTarget();
@@ -130,6 +148,57 @@ public class EnemyHealthBarUI : MonoBehaviour
     {
         if (levelText != null)
             levelText.text = $"首領　等級 {Mathf.Max(1, level)}";
+    }
+
+    public void SetBossPresentation(float height)
+    {
+        worldOffset = Vector3.up * height;
+        worldWidth = 2.6f;
+        worldHeight = 0.16f;
+        levelTextColor = new Color(1f, 0.72f, 0.3f);
+        if (healthCanvas != null)
+        {
+            healthCanvas.transform.localPosition = worldOffset +
+                (phaseFills != null ? Vector3.up * (worldHeight * 2.6f) : Vector3.zero);
+            healthCanvas.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 20f);
+            healthCanvas.transform.localScale = new Vector3(worldWidth / 200f, worldHeight / 20f, 1f);
+        }
+        if (levelText != null) levelText.color = levelTextColor;
+    }
+
+    public void SetBossPhases(BossController controller)
+    {
+        boss = controller;
+        if (boss == null || healthCanvas == null || phaseFills != null) return;
+        healthCanvas.GetComponent<RectTransform>().sizeDelta = new Vector2(200f, 20f);
+        healthCanvas.transform.localScale = new Vector3(worldWidth / 200f, worldHeight / 20f, 1f);
+        phaseFills = new RectTransform[BossController.PhaseCount];
+        phaseImages = new Image[BossController.PhaseCount];
+        phaseFills[0] = fillRect;
+        fillRect.offsetMin = new Vector2(6f, 4f);
+        fillRect.offsetMax = new Vector2(-6f, -4f);
+        phaseImages[0] = fillRect.GetComponent<Image>();
+        for (int i = 1; i < phaseFills.Length; i++)
+        {
+            RectTransform background = CreateImage("Phase " + (i + 1), healthCanvas.transform, backgroundColor);
+            background.anchorMin = Vector2.zero;
+            background.anchorMax = Vector2.one;
+            background.offsetMin = new Vector2(0f, -i * 26f);
+            background.offsetMax = new Vector2(0f, -i * 26f);
+            RectTransform fill = CreateImage("Fill", background, healthColor);
+            fill.anchorMin = Vector2.zero;
+            fill.anchorMax = Vector2.one;
+            fill.pivot = new Vector2(0f, .5f);
+            fill.offsetMin = new Vector2(6f, 4f);
+            fill.offsetMax = new Vector2(-6f, -4f);
+            phaseFills[i] = fill;
+            phaseImages[i] = fill.GetComponent<Image>();
+        }
+        // Keep the lowest of the three bars above the horns.
+        healthCanvas.transform.localPosition = worldOffset + Vector3.up * (worldHeight * 2.6f);
+        levelText.fontSize = 24;
+        levelText.rectTransform.anchoredPosition = new Vector2(0f, 8f);
+        levelText.rectTransform.sizeDelta = new Vector2(100f, 72f);
     }
 
     RectTransform CreateImage(string objectName, Transform parent, Color imageColor)

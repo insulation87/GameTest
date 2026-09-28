@@ -38,6 +38,7 @@ public class EnemyProjectile : MonoBehaviour
     {
         if (consumed || collider == null || (owner != null && collider.transform.IsChildOf(owner.transform))) return false;
         PlayerHealth victim = collider.GetComponentInParent<PlayerHealth>();
+        if (victim == null) GameAudio.At(GameSound.Impact, collider.ClosestPoint(transform.position));
         if (victim != null && !victim.IsDead) victim.TakeDamage(damage);
         consumed = true; Destroy(gameObject); return true;
     }

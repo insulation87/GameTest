@@ -61,8 +61,12 @@ public class Player : MonoBehaviour
 
     void Awake()
     {
+        if (GetComponent<CharacterMovementAudio>() == null)
+            gameObject.AddComponent<CharacterMovementAudio>();
         if (GetComponent<PlayerCursorController>() == null)
             gameObject.AddComponent<PlayerCursorController>();
+        if (GetComponent<BossTestShortcut>() == null)
+            gameObject.AddComponent<BossTestShortcut>();
     }
 
     void Start()
@@ -256,6 +260,7 @@ public class Player : MonoBehaviour
 
     void BeginSlide()
     {
+        GameAudio.Local(GameSound.Slide);
         isSliding = true;
         isCrouching = false;
         slideTimeRemaining = slideDuration;
@@ -283,6 +288,7 @@ public class Player : MonoBehaviour
         if (!crouching && !CanStandUp())
             return;
 
+        if (isCrouching != crouching) GameAudio.Local(GameSound.Stance);
         isCrouching = crouching;
         if (crouching)
             ApplyCrouchedCollider();
@@ -374,11 +380,13 @@ public class Player : MonoBehaviour
 
         if (isGrounded)
         {
+            GameAudio.Local(GameSound.Jump);
             rb.AddForce(Vector3.up * jumpForce, ForceMode.Impulse);
             isGrounded = false;
         }
         else if (airJumpsRemaining > 0)
         {
+            GameAudio.Local(GameSound.Jump);
             Vector3 velocity = rb.linearVelocity;
             velocity.y = 0f;
             rb.linearVelocity = velocity;
@@ -389,6 +397,7 @@ public class Player : MonoBehaviour
 
     void CheckGround()
     {
+        bool wasGrounded = isGrounded;
         Vector3 origin = transform.position + Vector3.up * 0.1f;
         float rayDistance = groundCheckDistance + 0.1f;
 
@@ -400,6 +409,8 @@ public class Player : MonoBehaviour
             layerMask,
             QueryTriggerInteraction.Ignore);
 
+        if (!wasGrounded && isGrounded && rb.linearVelocity.y < -1.5f)
+            GameAudio.Local(GameSound.Land, Mathf.Clamp01(-rb.linearVelocity.y / 8f));
         if (isGrounded && rb.linearVelocity.y <= 0.1f)
         {
             PlayerHealth health = GetComponent<PlayerHealth>();
@@ -410,6 +421,47 @@ public class Player : MonoBehaviour
         {
             Debug.DrawRay(origin, Vector3.down * rayDistance, isGrounded ? Color.green : Color.red);
         }
+    }
+
+    public bool TryGetTeleportPosition(Vector3 groundPoint, Quaternion rotation, out Vector3 position)
+    {
+        Vector3 size = Vector3.Scale(standingColliderSize, transform.lossyScale);
+        Vector3 center = Vector3.Scale(standingColliderCenter, transform.lossyScale);
+        position = groundPoint + Vector3.up * (size.y * 0.5f - center.y + 0.08f);
+        if (DungeonHazardDirector.IsUnsafe(groundPoint, 1f)) return false;
+        if (bodyCollider == null || size.sqrMagnitude < 0.01f)
+            return false;
+
+        Vector3 halfExtents = size * 0.5f - Vector3.one * 0.02f;
+        foreach (Collider overlap in Physics.OverlapBox(position + rotation * center,
+            halfExtents, rotation, Physics.AllLayers, QueryTriggerInteraction.Ignore))
+        {
+            if (overlap != bodyCollider && !overlap.transform.IsChildOf(transform))
+                return false;
+        }
+        return true;
+    }
+
+    public void Teleport(Vector3 position, Quaternion rotation)
+    {
+        GameAudio.UI(GameSound.Teleport);
+        ClearMovementInput();
+        isSliding = isCrouching = isRunning = false;
+        jumpRequested = false;
+        slideTimeRemaining = 0f;
+        cameraHeightOffset = 0f;
+        RestoreStandingCollider();
+        transform.SetPositionAndRotation(position, rotation);
+        rb.position = position;
+        rb.rotation = rotation;
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        Physics.SyncTransforms();
+
+        foreach (FPSCameraLook cameraLook in FindObjectsByType<FPSCameraLook>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (cameraLook.player == transform) cameraLook.SetLook(0f, rotation.eulerAngles.y);
+        foreach (CameraFollowTPS cameraLook in FindObjectsByType<CameraFollowTPS>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+            if (cameraLook.target == transform) cameraLook.SetLook(cameraLook.GetPitch(), rotation.eulerAngles.y);
     }
 
     void OnDisable()

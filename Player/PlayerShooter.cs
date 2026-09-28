@@ -265,6 +265,7 @@ public class PlayerShooter : MonoBehaviour
             ? weaponBuild.ModifyFireInterval(fireInterval, equippedWeaponType)
             : fireInterval;
         nextFireTime = Time.time + effectiveInterval;
+        GameAudio.Shot(equippedWeaponType);
         if (weaponBuild != null)
             weaponBuild.OnShot(equippedWeaponType);
 
@@ -553,12 +554,49 @@ public class WeaponInventory : MonoBehaviour
 
     public void AddGold(int amount)
     {
+        if (amount > 0) GameAudio.UI(GameSound.Coins);
         gold += Mathf.Max(0, amount);
         RefreshDetails();
     }
 
+    public void GrantBossTestSupplies(EnemyHealth weaponStats)
+    {
+        if (weaponStats == null)
+            return;
+
+        WeaponType[] types = (WeaponType[])Enum.GetValues(typeof(WeaponType));
+        var rewards = new List<WeaponItem>();
+        for (int i = 0; i < Mathf.Min(5, types.Length); i++)
+        {
+            int chosen = UnityEngine.Random.Range(i, types.Length);
+            WeaponType swap = types[i];
+            types[i] = types[chosen];
+            types[chosen] = swap;
+            rewards.Add(weaponStats.CreateWeaponItem(types[i], 100, 1f));
+        }
+
+        // Put the new weapons first so they remain accessible even in a full backpack.
+        weapons.InsertRange(0, rewards);
+        healthPackCount += 10;
+        int itemStacks = 1 + (grenadeCount > 0 ? 1 : 0);
+        for (int floor = 1; floor <= 3; floor++)
+            if (floorKeyCounts[floor] > 0) itemStacks++;
+        capacity = Mathf.Max(capacity, weapons.Count + itemStacks);
+        selectedWeapon = rewards[0];
+        GameAudio.UI(GameSound.Pickup);
+        RefreshWeaponList();
+        RefreshDetails();
+    }
+
+    public void CloseMenusForGameplay()
+    {
+        if (IsPaused) SetPaused(false);
+        if (IsOpen) SetOpen(false);
+    }
+
     public void AddHealthPack(float restoreAmount)
     {
+        GameAudio.UI(GameSound.Pickup);
         healthPackCount++;
         healthPackRestoreAmount = Mathf.Max(1f, restoreAmount);
         RefreshWeaponList();
@@ -566,6 +604,7 @@ public class WeaponInventory : MonoBehaviour
 
     public void AddGrenade()
     {
+        GameAudio.UI(GameSound.Pickup);
         grenadeCount++;
         RefreshWeaponList();
     }
@@ -583,16 +622,23 @@ public class WeaponInventory : MonoBehaviour
     void EquipGrenade()
     {
         if (grenadeCount <= 0)
+        {
+            GameAudio.UI(GameSound.Denied);
             return;
+        }
 
         GrenadeThrower thrower = GetComponent<GrenadeThrower>();
         if (thrower != null)
+        {
+            GameAudio.UI(GameSound.Equip);
             thrower.SetEquipped(true);
+        }
         RefreshWeaponList();
     }
 
     public void AddFloorKey(int floor)
     {
+        GameAudio.UI(GameSound.Key);
         floor = Mathf.Clamp(floor, 1, 3);
         floorKeyCounts[floor]++;
         RefreshWeaponList();
@@ -603,7 +649,10 @@ public class WeaponInventory : MonoBehaviour
         PlayerHealth health = GetComponent<PlayerHealth>();
         if (healthPackCount <= 0 || health == null || health.IsDead ||
             health.CurrentHealth >= health.maxHealth)
+        {
+            GameAudio.UI(GameSound.Denied);
             return;
+        }
 
         health.Heal(healthPackRestoreAmount);
         healthPackCount--;
@@ -716,6 +765,7 @@ public class WeaponInventory : MonoBehaviour
             return;
 
         activeWeaponSlot = slotIndex;
+        if (inventoryPanel != null) GameAudio.UI(GameSound.Equip);
         equippedWeapon = weapon;
         GrenadeThrower thrower = GetComponent<GrenadeThrower>();
         if (thrower != null)
@@ -734,6 +784,7 @@ public class WeaponInventory : MonoBehaviour
         if (inventoryPanel == null)
             return;
 
+        if (open != IsOpen) GameAudio.UI(open ? GameSound.Open : GameSound.Close);
         inventoryPanel.SetActive(open);
         if (hotbarPanel != null)
             hotbarPanel.SetActive(!open && !IsPaused);
@@ -801,13 +852,29 @@ public class WeaponInventory : MonoBehaviour
         );
         listArea.GetComponent<RectTransform>().anchoredPosition = new Vector2(-155f, 0f);
 
-        weaponListContent = listArea.GetComponent<RectTransform>();
-        GridLayoutGroup layout = listArea.AddComponent<GridLayoutGroup>();
+        listArea.AddComponent<RectMask2D>();
+        GameObject gridContent = new GameObject("Inventory Items", typeof(RectTransform));
+        weaponListContent = gridContent.GetComponent<RectTransform>();
+        weaponListContent.SetParent(listArea.transform, false);
+        weaponListContent.anchorMin = new Vector2(0f, 1f);
+        weaponListContent.anchorMax = Vector2.one;
+        weaponListContent.pivot = new Vector2(0.5f, 1f);
+        weaponListContent.sizeDelta = Vector2.zero;
+        GridLayoutGroup layout = gridContent.AddComponent<GridLayoutGroup>();
         layout.padding = new RectOffset(25, 25, 25, 25);
         layout.spacing = new Vector2(10f, 10f);
         layout.cellSize = new Vector2(90f, 90f);
         layout.constraint = GridLayoutGroup.Constraint.FixedColumnCount;
         layout.constraintCount = 5;
+        ContentSizeFitter fitter = gridContent.AddComponent<ContentSizeFitter>();
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+        ScrollRect inventoryScroll = listArea.AddComponent<ScrollRect>();
+        inventoryScroll.viewport = listArea.GetComponent<RectTransform>();
+        inventoryScroll.content = weaponListContent;
+        inventoryScroll.horizontal = false;
+        inventoryScroll.vertical = true;
+        inventoryScroll.movementType = ScrollRect.MovementType.Clamped;
+        inventoryScroll.scrollSensitivity = 35f;
 
         GameObject details = CreateUIObject(
             "Weapon Details",
@@ -1033,6 +1100,7 @@ public class WeaponInventory : MonoBehaviour
         price = Mathf.Max(0, price);
         if (gold < price)
         {
+            GameAudio.UI(GameSound.Denied);
             shopStatusText.text = $"金幣不足，還需要 {price - gold} 金幣。";
             return;
         }
@@ -1056,6 +1124,7 @@ public class WeaponInventory : MonoBehaviour
 
         gold -= price;
         health.ApplyEquipmentArmorBonus(bonus - oldBonus);
+        GameAudio.UI(GameSound.Coins);
         shopStatusText.text = $"已裝備 {equippedArmor.armorName}，最大護甲 +{bonus:0}。";
         RefreshShopUI();
     }
@@ -1065,12 +1134,14 @@ public class WeaponInventory : MonoBehaviour
         price = Mathf.Max(0, price);
         if (weapons.Count >= capacity)
         {
+            GameAudio.UI(GameSound.Denied);
             shopStatusText.text = "背包已滿，請先出售武器。";
             return;
         }
 
         if (gold < price)
         {
+            GameAudio.UI(GameSound.Denied);
             shopStatusText.text = $"金幣不足，還需要 {price - gold} 金幣。";
             return;
         }
@@ -1078,12 +1149,14 @@ public class WeaponInventory : MonoBehaviour
         WeaponItem weapon = CreateShopWeapon(type);
         if (!AddWeapon(weapon))
         {
+            GameAudio.UI(GameSound.Denied);
             shopStatusText.text = "購買失敗，背包沒有空位。";
             return;
         }
 
         gold -= price;
         selectedWeapon = weapon;
+        GameAudio.UI(GameSound.Coins);
         shopStatusText.text = $"已購買 {weapon.weaponName}，可在背包中裝備。";
         RefreshShopUI();
         RefreshDetails();
@@ -1173,6 +1246,7 @@ public class WeaponInventory : MonoBehaviour
             TextAnchor.MiddleLeft, new Vector2(-190f, 75f), new Vector2(150f, 45f));
         pauseVolumeSlider = CreatePauseSlider(pauseSettingsBox.transform, new Vector2(80f, 75f));
         pauseVolumeSlider.value = PlayerPrefs.GetFloat("Settings.MasterVolume", AudioListener.volume);
+        pauseVolumeSlider.onValueChanged.AddListener(value => AudioListener.volume = Mathf.Clamp01(value));
 
         CreateText("Fullscreen Label", pauseSettingsBox.transform, "全螢幕", 22,
             TextAnchor.MiddleLeft, new Vector2(-190f, 0f), new Vector2(150f, 45f));
@@ -1340,6 +1414,7 @@ public class WeaponInventory : MonoBehaviour
 
     void ShowPauseSettings()
     {
+        GameAudio.UI(GameSound.Open);
         pauseMenuBox.SetActive(false);
         pauseShopBox.SetActive(false);
         if (pauseBuildGuideBox != null)
@@ -1349,6 +1424,7 @@ public class WeaponInventory : MonoBehaviour
 
     void ShowWeaponBuildGuide()
     {
+        GameAudio.UI(GameSound.Open);
         pauseMenuBox.SetActive(false);
         pauseShopBox.SetActive(false);
         pauseSettingsBox.SetActive(false);
@@ -1357,6 +1433,7 @@ public class WeaponInventory : MonoBehaviour
 
     void ShowPauseShop()
     {
+        GameAudio.UI(GameSound.Open);
         pauseMenuBox.SetActive(false);
         pauseSettingsBox.SetActive(false);
         if (pauseBuildGuideBox != null)
@@ -1368,6 +1445,9 @@ public class WeaponInventory : MonoBehaviour
 
     void ShowPauseMain()
     {
+        if ((pauseSettingsBox != null && pauseSettingsBox.activeSelf) ||
+            (pauseShopBox != null && pauseShopBox.activeSelf) ||
+            (pauseBuildGuideBox != null && pauseBuildGuideBox.activeSelf)) GameAudio.UI(GameSound.Close);
         pauseSettingsBox.SetActive(false);
         pauseShopBox.SetActive(false);
         if (pauseBuildGuideBox != null)
@@ -1378,6 +1458,7 @@ public class WeaponInventory : MonoBehaviour
     void SavePauseSettings()
     {
         AudioListener.volume = pauseVolumeSlider.value;
+        GameAudio.UI(GameSound.Confirm);
         Screen.fullScreen = pauseFullscreenToggle.isOn;
         PlayerPrefs.SetFloat("Settings.MasterVolume", pauseVolumeSlider.value);
         PlayerPrefs.SetInt("Settings.Fullscreen", pauseFullscreenToggle.isOn ? 1 : 0);
@@ -1387,6 +1468,7 @@ public class WeaponInventory : MonoBehaviour
 
     void LeaveGame()
     {
+        GameAudio.UI(GameSound.Close);
         Time.timeScale = 1f;
         SceneManager.LoadScene("MainMenu");
     }
@@ -1531,6 +1613,7 @@ public class WeaponInventory : MonoBehaviour
         if (pausePanel == null || paused == IsPaused)
             return;
 
+        GameAudio.UI(paused ? GameSound.Open : GameSound.Close);
         pausePanel.SetActive(paused);
         if (hotbarPanel != null)
             hotbarPanel.SetActive(!paused && !IsOpen);
@@ -1558,8 +1641,12 @@ public class WeaponInventory : MonoBehaviour
     void SellSelectedWeapon()
     {
         if (selectedWeapon == null || GetEquippedSlotIndex(selectedWeapon) >= 0)
+        {
+            GameAudio.UI(GameSound.Denied);
             return;
+        }
 
+        GameAudio.UI(GameSound.Coins);
         gold += GetSellPrice(selectedWeapon);
         weapons.Remove(selectedWeapon);
         selectedWeapon = null;
@@ -1762,6 +1849,7 @@ public class WeaponInventory : MonoBehaviour
         );
         buttonObject.GetComponent<RectTransform>().anchoredPosition = position;
         Button button = buttonObject.AddComponent<Button>();
+        buttonObject.AddComponent<GameUIAudio>();
         button.targetGraphic = buttonObject.GetComponent<Image>();
 
         CreateText(

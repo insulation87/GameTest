@@ -69,6 +69,7 @@ public class WeaponBuildSystem : MonoBehaviour
 
     public void RefreshBuild()
     {
+        WeaponBuild previousBuild = ActiveBuild;
         if (inventory == null)
             inventory = GetComponent<WeaponInventory>();
         IReadOnlyList<WeaponItem> slots = inventory != null ? inventory.EquippedSlots : null;
@@ -76,6 +77,7 @@ public class WeaponBuildSystem : MonoBehaviour
             ? WeaponBuild.None
             : ResolveBuild(slots[0].weaponType, slots[1].weaponType, slots[2].weaponType);
         ResetCombatState();
+        if (ActiveBuild != WeaponBuild.None && ActiveBuild != previousBuild) GameAudio.UI(GameSound.BuildReady);
         if (buildText != null)
             buildText.text = ActiveBuild == WeaponBuild.None ? "" : $"武器組合：{ActiveBuildName}";
     }
@@ -227,6 +229,7 @@ public class WeaponBuildSystem : MonoBehaviour
 
     void DamageArea(Vector3 center, float radius, float damage)
     {
+        GameAudio.At(GameSound.Explosion, center, .65f);
         HashSet<EnemyHealth> hit = new HashSet<EnemyHealth>();
         foreach (Collider collider in Physics.OverlapSphere(center, radius))
         {
