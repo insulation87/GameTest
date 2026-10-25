@@ -1,0 +1,14 @@
+PASS
+PASS High-count review executes inside real Unity Play Mode
+PASS Stress review save path remains isolated
+PASS Actual production spawner safely instantiates 150 enemies across Map1 rooms
+PASS A further spawn is rejected at the real 150-enemy cap
+PASS All 150 physical enemies have the raised health range
+PASS 150 live enemies remain within the cap while the real spawn loop runs
+PASS All 150 enemies remain on valid navigation after AI and physics updates
+PASS Actual production spawner safely instantiates 240 enemies across Map1 rooms
+PASS A further spawn is rejected at the real 240-enemy cap
+PASS All 240 physical enemies have the raised health range
+PASS 240 live enemies remain within the cap while the real spawn loop runs
+PASS All 240 enemies remain on valid navigation after AI and physics updates
+PASS No unexpected game/runtime errors: 

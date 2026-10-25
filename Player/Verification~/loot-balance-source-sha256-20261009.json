@@ -1,0 +1,22 @@
+﻿[
+    {
+        "Path":  "NPC\\EnemyHealth.cs",
+        "SHA256":  "329FD819C582C112B43577EBD3F257BEF8AF597E03943FADCDBF8955F6978FD2"
+    },
+    {
+        "Path":  "NPC\\NPCSpawner.cs",
+        "SHA256":  "B38EB6EFD4D561A45AA1476368C25E8508D24C3C4D4D93B2FED1DEF8831FDAE7"
+    },
+    {
+        "Path":  "Dungeon\\FloorProgressionManager.cs",
+        "SHA256":  "46178BF6EBCC1773087461622D0290D5E4B268269078295F65BB7DF04E2D03DC"
+    },
+    {
+        "Path":  "Player\\CharacterWeapons.cs",
+        "SHA256":  "7E6A928362073C0384F07DD07FFA4957CE94F4BD438D1F2354BC391FA7A5300F"
+    },
+    {
+        "Path":  "Player\\PlayerShooter.cs",
+        "SHA256":  "3834A88939D7753674417B267D4F87CD42F71A53377B72E4F2A10B22FE21EDD0"
+    }
+]

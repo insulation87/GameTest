@@ -17,10 +17,15 @@ public class PlayerHealthBarUI : MonoBehaviour
     private RectTransform experienceFillRect;
     private RectTransform armorFillRect;
     private Text levelText;
+    private Text vitalsText;
 
     void Awake()
     {
         health = GetComponent<PlayerHealth>();
+        backgroundColor = GameUITheme.Recess;
+        healthColor = GameUITheme.Health;
+        armorColor = GameUITheme.Teal;
+        experienceColor = GameUITheme.Gold;
         BuildHealthBar();
     }
 
@@ -59,6 +64,8 @@ public class PlayerHealthBarUI : MonoBehaviour
                 ? $"等級 {health.CurrentLevel}　已達滿級"
                 : $"等級 {health.CurrentLevel}　經驗 {health.CurrentExperience}/{health.ExperienceToNextLevel}";
         }
+        if (vitalsText != null)
+            vitalsText.text = $"生命 {Mathf.CeilToInt(health.CurrentHealth)} / {Mathf.CeilToInt(health.maxHealth)}    護甲 {Mathf.CeilToInt(health.CurrentArmor)}";
     }
 
     void BuildHealthBar()
@@ -73,16 +80,28 @@ public class PlayerHealthBarUI : MonoBehaviour
 
         healthCanvas = canvasObject.GetComponent<Canvas>();
         healthCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+        healthCanvas.transform.SetParent(transform, false);
         healthCanvas.sortingOrder = 100;
 
         CanvasScaler scaler = canvasObject.GetComponent<CanvasScaler>();
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
         scaler.referenceResolution = new Vector2(1920f, 1080f);
         scaler.matchWidthOrHeight = 0.5f;
+        GameUITheme.FitCanvas(scaler);
 
         CanvasGroup group = canvasObject.GetComponent<CanvasGroup>();
         group.interactable = false;
         group.blocksRaycasts = false;
+
+        RectTransform card = AccountLoginPanel.Box(healthCanvas.transform, "Vitals Panel", Vector2.zero,
+            new Vector2(456, 166), GameUITheme.Panel);
+        card.anchorMin = card.anchorMax = card.pivot = new Vector2(0, 1);
+        card.anchoredPosition = screenPosition - new Vector2(12, -12);
+        GameUITheme.Frame(card);
+        vitalsText = GameUITheme.Label(healthCanvas.transform, "", 18, Vector2.zero, new Vector2(430, 32));
+        vitalsText.rectTransform.anchorMin = vitalsText.rectTransform.anchorMax = vitalsText.rectTransform.pivot = new Vector2(0, 1);
+        vitalsText.rectTransform.anchoredPosition = screenPosition + new Vector2(0, -104);
+        vitalsText.color = GameUITheme.Muted;
 
         RectTransform background = CreateImage(
             "Background",
@@ -156,7 +175,7 @@ public class PlayerHealthBarUI : MonoBehaviour
         levelText.fontSize = 20;
         levelText.fontStyle = FontStyle.Bold;
         levelText.alignment = TextAnchor.UpperLeft;
-        levelText.color = Color.white;
+        levelText.color = GameUITheme.Ivory;
         levelText.raycastTarget = false;
     }
 

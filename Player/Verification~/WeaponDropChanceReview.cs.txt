@@ -1,0 +1,120 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using Object = UnityEngine.Object;
+using Random = UnityEngine.Random;
+
+// Run only against a disposable copy of the project.
+[InitializeOnLoad]
+public static class WeaponDropChanceReview
+{
+    const string Pending = "WeaponDropChanceReview.Pending";
+    static readonly List<string> results = new List<string>();
+    static readonly List<string> errors = new List<string>();
+    static string Out => Path.GetFullPath(Path.Combine(Application.dataPath, "../.."));
+    static WeaponDropChanceReview() { EditorApplication.playModeStateChanged += Changed; }
+    public static void Run()
+    {
+        string root = Path.GetFullPath(Path.Combine(Application.dataPath, ".."));
+        if (!Application.isBatchMode || !root.StartsWith(Path.GetTempPath(), StringComparison.OrdinalIgnoreCase))
+            throw new Exception("A disposable temporary batch project is required.");
+        LoginSceneSetup.PlayFromCurrentScene();
+        EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        SessionState.SetBool(Pending, true);
+        EditorApplication.EnterPlaymode();
+    }
+    static void Changed(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.EnteredPlayMode || !SessionState.GetBool(Pending, false)) return;
+        SessionState.SetBool(Pending, false);
+        Application.logMessageReceived += Log;
+        EditorApplication.update += Checks;
+    }
+    static void Log(string message, string stack, LogType type)
+    {
+        if ((type == LogType.Error || type == LogType.Exception || type == LogType.Assert)
+            && !stack.Contains("UnityEditor.Search"))
+            errors.Add(message + "\n" + stack);
+    }
+    static void Check(bool condition, string message)
+    {
+        if (!condition) throw new Exception(message);
+        results.Add("PASS " + message);
+    }
+    static int Seed(float low, float high)
+    {
+        for (int seed = 0; seed < 1000000; seed++)
+        {
+            Random.InitState(seed);
+            float value = Random.value;
+            if (value > low && value < high) return seed;
+        }
+        throw new Exception("No boundary seed found.");
+    }
+    static bool Kill(GameObject prefab, float strength, int seed)
+    {
+        GameObject node = Object.Instantiate(prefab);
+        foreach (var behaviour in node.GetComponents<MonoBehaviour>())
+            if (!(behaviour is EnemyHealth)) behaviour.enabled = false;
+        var enemy = node.GetComponent<EnemyHealth>();
+        enemy.SetLevelAndExperience(1, 0);
+        enemy.SetStrength(strength);
+        enemy.healthRestoreAmount = 0;
+        enemy.armorEquipmentDropChance = enemy.progressionDropChance = 0;
+        enemy.showDamageNumbers = false;
+        Random.InitState(seed);
+        enemy.TakeDamage(enemy.maxHealth);
+        if (!enemy.IsDead) throw new Exception("Real lethal damage did not kill the monster.");
+        var pickups = Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None);
+        if (pickups.Length > 1) throw new Exception("Death produced duplicate weapons.");
+        bool dropped = pickups.Length == 1;
+        foreach (var item in pickups) Object.DestroyImmediate(item.gameObject);
+        Object.DestroyImmediate(node);
+        return dropped;
+    }
+    static void Checks()
+    {
+        EditorApplication.update -= Checks;
+        int code = 0;
+        try
+        {
+            Check(Application.isPlaying, "Checks execute inside Unity Editor Play Mode");
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/NPC/Enemy.prefab");
+            Check(prefab != null, "Load actual production Enemy prefab");
+            var defaults = prefab.GetComponent<EnemyHealth>();
+            Check(Mathf.Approximately(defaults.weakNpcWeaponDropChance, .175f), "Actual prefab weak weapon chance is 17.5% (formerly 35%)");
+            Check(Mathf.Approximately(defaults.strongNpcWeaponDropChance, .04f), "Actual prefab strong weapon chance is 4% (formerly 8%)");
+            Check(Mathf.Approximately(defaults.healthDropChance, .1f) && Mathf.Approximately(defaults.armorEquipmentDropChance, .25f)
+                && Mathf.Approximately(defaults.progressionDropChance, .01f), "Health, armor and progression default drop rates remain 10%, 25%, 1%");
+            float[] strengths = { 0f, .5f, 1f };
+            float[] thresholds = { .175f, .1075f, .04f };
+            for (int i = 0; i < strengths.Length; i++)
+            {
+                float threshold = thresholds[i];
+                Check(Kill(prefab, strengths[i], Seed(threshold - .0001f, threshold)),
+                    $"Strength {strengths[i]}: real death drops weapon just below {threshold:P2}");
+                Check(!Kill(prefab, strengths[i], Seed(threshold, threshold + .0001f)),
+                    $"Strength {strengths[i]}: real death rejects weapon just above {threshold:P2}");
+                Check(!Kill(prefab, strengths[i], Seed(threshold * 1.4f, threshold * 1.6f)),
+                    $"Strength {strengths[i]}: formerly eligible upper half now produces no weapon");
+                int actual = 0, expected = 0;
+                for (int sample = 0; sample < 1000; sample++)
+                {
+                    int seed = 28471 + sample;
+                    Random.InitState(seed);
+                    if (Random.value < threshold) expected++;
+                    if (Kill(prefab, strengths[i], seed)) actual++;
+                }
+                Check(actual == expected, $"Strength {strengths[i]}: 1000 real monster deaths yield {actual} weapons, matching seeded {threshold:P2} threshold");
+            }
+            Check(errors.Count == 0, "No unexpected runtime errors: " + string.Join("\n", errors));
+        }
+        catch (Exception ex) { results.Add("FAIL " + ex); code = 1; }
+        File.WriteAllLines(Path.Combine(Out, "weapon-drop-result.txt"), results);
+        Application.logMessageReceived -= Log;
+        EditorApplication.Exit(code);
+    }
+}

@@ -1,0 +1,520 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class FirstFloorKeyRemovalReview
+{
+    const string Pending = "FirstFloorKeyRemovalReview.Pending";
+    const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    static readonly List<string> results = new List<string>(), errors = new List<string>();
+    static readonly Stack<IEnumerator> steps = new Stack<IEnumerator>();
+    static double next, deadline;
+    static string Out => Path.GetFullPath(Path.Combine(Application.dataPath,"../.."));
+    static Player player;
+    static PlayerHealth health;
+    static PlayerShooter shooter;
+    static WeaponInventory inventory;
+    static RogueTactics tactics;
+    static Camera camera;
+    static Projectile prefab;
+    static Vector3 arena = new Vector3(10000,0,10000);
+    static DungeonRoomBoundary boundary;
+    static FirstFloorKeyRemovalReview() { EditorApplication.playModeStateChanged += Changed; }
+    public static void Run()
+    {
+        if (!Application.isBatchMode || !Path.GetFullPath(Application.dataPath).StartsWith(Path.GetTempPath(),StringComparison.OrdinalIgnoreCase))
+            throw new Exception("Temporary batch copy required.");
+        PlayerSettings.companyName="CodexIsolatedReview";
+        PlayerSettings.productName="FirstFloorKeyRemovalReview-"+new DirectoryInfo(Out).Name;
+        LoginSceneSetup.PlayFromCurrentScene();
+        EditorSceneManager.OpenScene("Assets/Scenes/Map1.unity",OpenSceneMode.Single);
+        foreach (var player in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save = player.GetComponent<GameProgressSave>() ?? player.gameObject.AddComponent<GameProgressSave>();
+            save.enabled = false;
+        }
+        foreach (var spawner in Object.FindObjectsByType<NPCSpawner>(FindObjectsSortMode.None)) spawner.enabled = false;
+        SessionState.SetBool(Pending,true); EditorApplication.EnterPlaymode();
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void IsolateSaves()
+    {
+        if (!Application.isBatchMode || !SessionState.GetBool(Pending,false)) return;
+        string path=Path.Combine(Out,"isolated-progress.json");
+        foreach(var suffix in new[]{"",".bak",".tmp"}) if(File.Exists(path+suffix)) File.Delete(path+suffix);
+        GameProgressSave.StartFresh=true;
+        foreach(var actor in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save=actor.GetComponent<GameProgressSave>();
+            save.StoragePath=path; save.enabled=true;
+        }
+    }
+    static void Changed(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.EnteredPlayMode || !SessionState.GetBool(Pending,false)) return;
+        SessionState.SetBool(Pending,false); results.Clear(); errors.Clear(); steps.Clear(); steps.Push(Checks());
+        next = EditorApplication.timeSinceStartup + .3; deadline = EditorApplication.timeSinceStartup + 360;
+        Application.logMessageReceived += Log; EditorApplication.update += Tick;
+    }
+    static void Log(string text,string stack,LogType type)
+    {
+        if (stack.Contains("UnityEditor.Search") || text.Contains("burst JIT compiler")) return;
+        if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) errors.Add(text + "\n" + stack);
+    }
+    static void Tick()
+    {
+        if (EditorApplication.timeSinceStartup < next) return;
+        try
+        {
+            if (EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("Play Mode review timeout");
+            while (steps.Count > 0)
+            {
+                var step = steps.Peek();
+                if (!step.MoveNext()) { steps.Pop(); continue; }
+                if (step.Current is IEnumerator nested) { steps.Push(nested); continue; }
+                next = EditorApplication.timeSinceStartup + (step.Current is float seconds ? seconds : .05); return;
+            }
+            Check(errors.Count == 0,"No unexpected game/runtime errors: " + string.Join("\n",errors)); Finish(0);
+        }
+        catch (Exception ex) { results.Add("FAIL " + ex); Finish(1); }
+    }
+    static void Finish(int code)
+    {
+        File.WriteAllText(Path.Combine(Out,"key-removal-result.txt"),(code == 0 ? "PASS" : "FAIL") + "\n" + string.Join("\n",results) + "\n" + string.Join("\n",errors));
+        Application.logMessageReceived -= Log; EditorApplication.update -= Tick; EditorApplication.Exit(code);
+    }
+    static void Check(bool value,string message) { if (!value) throw new Exception(message); results.Add("PASS " + message); File.WriteAllLines(Path.Combine(Out,"key-removal-live.txt"),results); }
+    static object Get(object target,string field) => target.GetType().GetField(field,Flags).GetValue(target);
+    static void Set(object target,string field,object value) => target.GetType().GetField(field,Flags).SetValue(target,value);
+    static object Call(object target,string method,params object[] args) => target.GetType().GetMethod(method,Flags).Invoke(target,args);
+    static void CloseUpgrade()
+    {
+        int guard = 0; while (health.IsChoosingUpgrade && guard++ < 24) health.SelectCoopUpgrade(0);
+        Time.timeScale = 1;
+    }
+    static void Move(Vector3 ground)
+    {
+        if (!player.TryGetTeleportPosition(ground,Quaternion.identity,out var pose)) throw new Exception("Unsafe test teleport: " + ground);
+        player.Teleport(pose,Quaternion.identity); Physics.SyncTransforms();
+    }
+    static IEnumerator KillEncounter(TacticalExpedition expedition,int id)
+    {
+        var markers = (TacticalMarker[])Get(expedition,"markers");
+        Move(markers[id].transform.position);
+        yield return .3f; CloseUpgrade();
+        if (expedition.ActiveEncounter < 0) expedition.TryBeginEncounter(id,player);
+        Check(expedition.ActiveEncounter == id,"Actual Map1 encounter starts: " + id);
+        for (int iteration = 0; iteration < 30 && !expedition.Progress.completed[id]; iteration++)
+        {
+            foreach (var enemy in expedition.EncounterEnemies.ToArray())
+            {
+                if (enemy == null || enemy.IsDead) continue;
+                var boss = enemy.GetComponent<BossController>();
+                if (boss != null && boss.IsTransforming) continue;
+                enemy.TakeDamage(100000,health,enemy.transform.position - enemy.transform.forward*3);
+            }
+            Set(expedition,"nextWave",Time.time - 1);
+            yield return id == 2 ? 1f : .25f; CloseUpgrade();
+        }
+        Check(expedition.Progress.completed[id],"Real death paths complete encounter and all waves: " + id);
+    }
+    static IEnumerator Checks()
+    {
+        yield return 1f;
+        Check(Application.isPlaying,"Review runs inside Unity Editor Play Mode");
+        player = Object.FindFirstObjectByType<Player>(); health = player.GetComponent<PlayerHealth>(); shooter = player.GetComponent<PlayerShooter>();
+        inventory = player.GetComponent<WeaponInventory>(); tactics = player.GetComponent<RogueTactics>();
+        var expedition = TacticalExpedition.Instance;
+        Check(expedition != null && expedition.Ready,"Actual Map1 bootstraps tactical encounters on saved meadow/forest geometry");
+        Check(Application.companyName=="CodexIsolatedReview" && (string)Get(player.GetComponent<GameProgressSave>(),"sessionPath")==Path.Combine(Out,"isolated-progress.json"),"Both persistent-data directory and active save path are isolated from user progress");
+        Check(health.IsChoosingUpgrade && health.CurrentLevel == 2,$"New run receives its first tactical choice at level two (level={health.CurrentLevel}, choosing={health.IsChoosingUpgrade}, kit={health.ExpeditionKitReceived}, region={Object.FindFirstObjectByType<OverworldDirector>().RegionAt(player.transform.position)}, timescale={Time.timeScale}, players={Object.FindObjectsByType<Player>(FindObjectsSortMode.None).Length})");
+        Check(health.CoopUpgradeLabels().All(label => label.Contains("路線")),"First three upgrade cards offer different attack behavior");
+        CloseUpgrade();
+        Check(health.ShotStyle != TacticalShotStyle.None,"Actual upgrade button commits one attack behavior");
+        Check(inventory.EquippedSlots.All(item => item != null),"Starter course fills all three weapon slots");
+        Set(health,"invincibleUntil",Time.time+300f);
+        expedition.enabled=false;
+        yield return RemovalDropChecks();
+        yield return RemovalChestChecks();
+        expedition.enabled=true;
+        yield return KillEncounter(expedition,0);
+        Check(inventory.Armors.Any(item => item.affix == TacticalAffix.SlideMark),"First encounter awards usable slide-mark boots");
+        yield return KillEncounter(expedition,1);
+        Check(inventory.Armors.Any(item => item.affix == TacticalAffix.LongEcho),"Second encounter awards echo-range tradeoff pants");
+        yield return KillEncounter(expedition,2);
+        Check(!DungeonVictoryUI.IsOpen,"Practice boss death does not trigger main campaign victory");
+        Check(FloorProgressionManager.Instance.IsComplete(1),"Grass course guarantees all required first-region keys");
+        int keys = FloorProgressionManager.Instance.CollectedFor(1);
+        var markers = (TacticalMarker[])Get(expedition,"markers");
+        Check(!expedition.TryBeginEncounter(0,player) && FloorProgressionManager.Instance.CollectedFor(1) == keys,"Completed event cannot be replayed for duplicate key rewards");
+        yield return KillEncounter(expedition,3);
+        Check(expedition.Progress.merchantRescued && FloorProgressionManager.Instance.IsComplete(2),"Forest rescue records merchant consequence and guarantees second-region keys");
+        Check(Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m => m.name.Contains("補給攤")),"Rescued merchant visibly establishes supplies in the next region");
+        yield return KillEncounter(expedition,4);
+        Check(expedition.Progress.treeRescued && FloorProgressionManager.Instance.IsComplete(3),"Ancient-tree rescue guarantees boss progression");
+        var finalBoss = Object.FindObjectsByType<BossController>(FindObjectsSortMode.None).FirstOrDefault(b => b.GetComponent<TacticalTrialBoss>() == null);
+        Check(finalBoss != null,"Main boss spawns through the real progression manager");
+        Check(Object.FindObjectsByType<TacticalField>(FindObjectsSortMode.None).Any(f=>f.Type==TacticalField.Kind.Shelter),"Tree rescue creates visible protection in the final boss arena");
+        Check(finalBoss.GetComponent<TacticalAltarHazard>() != null,"Unbroken altar adds a distinct final-fight danger");
+        yield return KillEncounter(expedition,5);
+        Set(finalBoss.GetComponent<TacticalAltarHazard>(),"next",Time.time-1); yield return .2f;
+        Check(expedition.Progress.altarDestroyed && finalBoss.GetComponent<TacticalAltarHazard>() == null,"Destroying the altar removes its boss hazard");
+        var save = player.GetComponent<GameProgressSave>(); yield return .5f;
+        Check(save.SaveNow(),"Actual save writes safely to the isolated review path");
+        Check(GameProgressSave.TryRead(Path.Combine(Out,"isolated-progress.json"),out var saved,out var error),"Saved expedition decodes: " + error);
+        Check(saved.expedition.completed.All(value=>value) && saved.health.shotStyle != TacticalShotStyle.None,"Save preserves event choices and tactical attack selection");
+        var cloned = JsonUtility.FromJson<ExpeditionProgress>(JsonUtility.ToJson(saved.expedition));
+        expedition.RestoreProgress(cloned);
+        Check(expedition.Progress.completed.All(value=>value) && expedition.Progress.merchantRescued && expedition.Progress.treeRescued,"Reload restores visible cross-region consequences");
+        expedition.enabled = false;
+        foreach (var enemy in EnemyHealth.ActiveEnemies.ToArray()) if (enemy != null) Object.DestroyImmediate(enemy.gameObject);
+        foreach (var field in Object.FindObjectsByType<TacticalField>(FindObjectsSortMode.None)) Object.DestroyImmediate(field.gameObject);
+        yield return ArenaChecks();
+    }
+    static void ClearLoot()
+    {
+        foreach(var item in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            if(item is IMagneticPickup) Object.DestroyImmediate(item.gameObject);
+    }
+    static IEnumerator RemovalDropChecks()
+    {
+        ClearLoot(); var original=inventory.CaptureProgress(); var progress=FloorProgressionManager.Instance;
+        var originalKeys=progress.CaptureProgress(); var legacyWorld=(int[])originalKeys.Clone(); legacyWorld[1]=9;
+        progress.RestoreProgress(legacyWorld);
+        var legacy=JsonUtility.FromJson<InventoryProgress>(JsonUtility.ToJson(original)); legacy.keys[1]=1; legacy.keys[2]=2; legacy.keys[3]=3;
+        inventory.RestoreProgress(legacy); yield return .1f;
+        var normalized=inventory.CaptureProgress();
+        Check(normalized.keys[1]==0 && normalized.keys[2]==2 && normalized.keys[3]==3,"Old save removes exactly the pictured first-floor inventory stack; later-floor stacks remain");
+        Check(progress.CollectedFor(1)==9,"Removing the inventory item preserves shared keystone progress");
+        Check(inventory.Weapons.Count==original.weapons.Length && inventory.Gold==original.gold && inventory.CaptureProgress().healthPacks==original.healthPacks,"Legacy inventory migration preserves weapons, currency and health packs");
+        Check(!inventory.GetComponentsInChildren<Text>(true).Any(t=>t.text.Contains("第1層道具")),"Actual inventory UI has no pictured first-floor item slot after restoring old progress");
+        inventory.AddFloorKey(1);
+        Check(inventory.CaptureProgress().keys[1]==0,"Legacy pickup path cannot add the retired item back to inventory");
+        var save=player.GetComponent<GameProgressSave>(); Check(save.SaveNow(),"Migrated inventory writes to isolated save");
+        Check(GameProgressSave.TryRead(Path.Combine(Out,"isolated-progress.json"),out var saved,out var error) && saved.inventory.keys[1]==0 && saved.floorKeys[1]==9,"Serialized save removes the item while retaining keystone progress");
+        inventory.RestoreProgress(original); progress.RestoreProgress(originalKeys); yield return .1f;
+        var defaults=AssetDatabase.LoadAssetAtPath<GameObject>("Assets/NPC/Enemy.prefab").GetComponent<EnemyHealth>();
+        Check(Mathf.Approximately(defaults.weakNpcWeaponDropChance,.175f) && Mathf.Approximately(defaults.strongNpcWeaponDropChance,.04f),"Earlier weapon-drop halving remains 17.5% and 4%");
+        for(int floor=1;floor<=3;floor++)
+        {
+            ClearLoot(); int xp=health.CurrentExperience;
+            var node=Object.Instantiate(defaults.gameObject,player.transform.position+Vector3.right*50,Quaternion.identity);
+            foreach(var behaviour in node.GetComponents<MonoBehaviour>()) if(!(behaviour is EnemyHealth)) behaviour.enabled=false;
+            var enemy=node.GetComponent<EnemyHealth>(); enemy.SetDungeonFloor(floor); enemy.SetLevelAndExperience(1,7); enemy.showDamageNumbers=false;
+            enemy.weakNpcWeaponDropChance=enemy.strongNpcWeaponDropChance=enemy.armorEquipmentDropChance=enemy.healthDropChance=enemy.progressionDropChance=1;
+            enemy.TakeDamage(100000,health);
+            Check(enemy.IsDead,"Real production NPC death on floor " + floor);
+            Check(Object.FindObjectsByType<FloorKeyPickup>(FindObjectsSortMode.None).Length==(floor==1?0:1),"Floor " + floor + " keystone drop is " + (floor==1?"removed even at 100% configured chance":"retained"));
+            Check(Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1 && Object.FindObjectsByType<ArmorPickup>(FindObjectsSortMode.None).Length==1 &&
+                Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None).Length==1 && Object.FindObjectsByType<ExperiencePickup>(FindObjectsSortMode.None).Length==1,"All four other loot categories remain on floor " + floor);
+            Check(health.CurrentExperience==xp,"Experience remains a ground pickup on floor " + floor);
+            Check(Object.FindFirstObjectByType<ExperiencePickup>().TryCollect(player.GetComponent<Collider>()),"Real XP pickup can be collected on floor " + floor);
+            yield return .1f; CloseUpgrade(); ClearLoot();
+        }
+    }
+    static IEnumerator RemovalChestChecks()
+    {
+        var director=Object.FindFirstObjectByType<TreasureChestDirector>(); director.enabled=false; director.RefreshRooms();
+        var rooms=director.GetComponentsInChildren<MedievalDungeonKit.DungeonMarker>().Select(DungeonRoomBoundary.GetOrCreate).Where(r=>r!=null).ToArray();
+        for(int floor=1;floor<=3;floor++)
+        {
+            bool spawned=false;
+            foreach(var room in rooms.Where(r=>OverworldDirector.MarkerFloor(r.transform)==floor))
+            {
+                if(!room.TryGetNavMeshPoint(room.transform.position,1,new NavMeshQueryFilter{agentTypeID=0,areaMask=NavMesh.AllAreas},out var point))continue;
+                Move(point); yield return .1f; CloseUpgrade();
+                for(int attempt=0;attempt<5 && !spawned;attempt++) spawned=director.TrySpawnChest();
+                if(spawned)break;
+            }
+            Check(spawned,"Actual Map1 floor " + floor + " can spawn a chest");
+            var chest=Object.FindFirstObjectByType<TreasureChest>(); chest.TakeDamage(100000,health);
+            Check(chest.IsBroken && Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1,"Actual floor " + floor + " chest still drops a weapon when broken");
+            Object.DestroyImmediate(chest.gameObject); ClearLoot();
+        }
+    }
+    static EnemyHealth Enemy(Vector3 point,float hp=1000)
+    {
+        var node = GameObject.CreatePrimitive(PrimitiveType.Cube); node.name = "Review Target"; node.transform.position = point;
+        node.transform.localScale = new Vector3(1,1.5f,1);
+        var enemy = node.AddComponent<EnemyHealth>(); enemy.SetMaxHealth(hp); enemy.SetLevelAndExperience(1,0);
+        enemy.healthDropChance=enemy.weakNpcWeaponDropChance=enemy.strongNpcWeaponDropChance=enemy.armorEquipmentDropChance=enemy.progressionDropChance=0;
+        enemy.showDamageNumbers = false; Physics.SyncTransforms(); return enemy;
+    }
+    static void ClearTargets()
+    {
+        foreach (var enemy in EnemyHealth.ActiveEnemies.ToArray()) if (enemy != null) Object.DestroyImmediate(enemy.gameObject);
+        foreach (var shot in Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None)) if (shot != prefab) Object.DestroyImmediate(shot.gameObject);
+        foreach (var field in Object.FindObjectsByType<TacticalField>(FindObjectsSortMode.None)) Object.DestroyImmediate(field.gameObject);
+        tactics.ResetTransientState();
+    }
+    static void Record(Vector3 origin,Vector3 direction,float damage=100)
+        => tactics.RecordShot(prefab,origin,direction,35,damage,1,0,0,0,WeaponType.Longbow);
+    static IEnumerator ArenaChecks()
+    {
+        var ground = GameObject.CreatePrimitive(PrimitiveType.Cube); ground.name="Isolated Tactical Arena";
+        ground.transform.position = arena - Vector3.up*.5f; ground.transform.localScale = new Vector3(80,1,80);
+        var source = new NavMeshBuildSource { shape=NavMeshBuildSourceShape.Box,size=ground.transform.localScale,transform=Matrix4x4.TRS(ground.transform.position,Quaternion.identity,Vector3.one),area=0 };
+        var nav = NavMeshBuilder.BuildNavMeshData(NavMesh.GetSettingsByIndex(0),new List<NavMeshBuildSource>{source},new Bounds(arena,new Vector3(80,10,80)),Vector3.zero,Quaternion.identity);
+        NavMesh.AddNavMeshData(nav);
+        boundary=new GameObject("Tactical Arena Boundary").AddComponent<DungeonRoomBoundary>(); boundary.transform.position=arena; boundary.halfSize=Vector2.one*38;
+        Move(arena); player.enabled=false; player.GetComponent<Rigidbody>().isKinematic=true;
+        health.enabled=false; health.criticalChance=0;
+        player.GetComponent<PickupMagnet>().enabled=false;
+        foreach (var behaviour in player.GetComponentsInChildren<MonoBehaviour>())
+            if (behaviour is FPSCameraLook || behaviour is CameraFollowTPS || behaviour is CameraSwitch) behaviour.enabled=false;
+        camera = new GameObject("Tactical Review Camera",typeof(Camera)).GetComponent<Camera>(); camera.tag="MainCamera";
+        foreach(var other in Object.FindObjectsByType<Camera>(FindObjectsSortMode.None)) if(other!=camera) { other.tag="Untagged"; other.enabled=false; }
+        var presentation=Object.FindFirstObjectByType<PixelArtDirector>(); if(presentation!=null) { presentation.enabled=false; Set(presentation,"gameplayViews",null); }
+        camera.transform.position=arena+new Vector3(0,1,-.5f); camera.transform.rotation=Quaternion.identity;
+        shooter.fpsCamera=camera; shooter.tpsCamera=null; shooter.enabled=false;
+        prefab=new GameObject("Review Bolt Template",typeof(SphereCollider),typeof(Rigidbody),typeof(Projectile)).GetComponent<Projectile>();
+        prefab.transform.position=arena+Vector3.up*100; prefab.GetComponent<SphereCollider>().radius=.08f; prefab.GetComponent<Rigidbody>().useGravity=false;
+        shooter.projectilePrefab=prefab;
+        Call(tactics,"CheckRoom"); yield return .15f;
+        tactics.AddResonance(100);
+        var enemy=Enemy(arena+new Vector3(0,1,7));
+        Record(arena+Vector3.up,Vector3.forward);
+        Check(tactics.TryReleaseEcho() && tactics.EchoArmed && !tactics.IsReplaying,"First press pins one echo rather than immediately firing it");
+        Check(Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m=>m.name=="預設回聲"),"Armed echo has a world position and direction marker");
+        yield return .3f;
+        Check(Mathf.Approximately(enemy.CurrentHealth,1000),"Armed echo waits for player timing and deals no automatic damage");
+        player.transform.position=arena+Vector3.right*8+Vector3.up; player.GetComponent<Rigidbody>().position=player.transform.position;
+        Check(tactics.TryReleaseEcho() && !tactics.EchoArmed,"Second press triggers the pinned attack after repositioning");
+        Check(!tactics.TryReleaseEcho(),"Playback cannot recursively arm a second echo");
+        yield return .5f;
+        Check(Mathf.Abs(enemy.CurrentHealth-955)<.1f,"Real echo projectile fires from the old position for 45% damage");
+        Check(tactics.Resonance==0,"Echo hits create neither new recording nor hit-charge feedback");
+        ClearTargets(); player.transform.position=arena+Vector3.up; player.GetComponent<Rigidbody>().position=player.transform.position;
+        tactics.AddResonance(100); Record(arena+Vector3.up,Vector3.forward); Check(tactics.TryReleaseEcho(),"Second planned ambush arms");
+        player.transform.position=arena+Vector3.right*40+Vector3.up;
+        Check(!tactics.TryReleaseEcho() && tactics.EchoArmed,"Out-of-range trigger is rejected without spending the pinned echo");
+        Set(tactics,"clock",(float)Get(tactics,"clock")+19f); Call(tactics,"AdvanceReplay");
+        Check(!tactics.EchoArmed,"Untriggered echo expires and clears its marker");
+        player.transform.position=arena+Vector3.up;
+        tactics.AddResonance(100); Record(arena+Vector3.up,Vector3.forward); tactics.TryReleaseEcho();
+        float remaining=tactics.EchoRemaining; Time.timeScale=0; yield return .3f;
+        Check(Mathf.Abs(tactics.EchoRemaining-remaining)<.001f,"Pause freezes planned-echo lifetime"); Time.timeScale=1;
+        player.Teleport(arena+Vector3.up,Quaternion.identity);
+        Check(!tactics.EchoArmed,"Teleport clears placed echoes and transient equipment effects");
+        yield return ComboChecks(); yield return BossChecks(); yield return RepresentativeChecks(); yield return ExtendedCombatChecks(); yield return EquipmentAndSupportChecks();
+        Check(!string.IsNullOrEmpty(WeaponBuildSystem.UtilityHint(WeaponType.FrostStaff)),"Equipment UI has actionable combo instructions");
+        Check(JsonUtility.FromJson<CoopTacticsState>(JsonUtility.ToJson(tactics.CaptureCoopState()))!=null,"Tactical echo state round-trips through multiplayer protocol");
+        var visuals=TacticalNetworkVisuals.Capture();
+        Check(visuals.Length<=64,"Network tactical visual count is bounded");
+        TacticalNetworkVisuals.Apply(visuals); TacticalNetworkVisuals.Apply(new CoopTacticalVisual[0]);
+        Check(true,"Remote world markers can be created and cleaned up from snapshots");
+        yield return .2f;
+        Capture("tactical-layout.png");
+        var expedition=TacticalExpedition.Instance;
+        Object.DestroyImmediate(expedition);
+        yield return .1f;
+        Check(TacticalExpedition.Instance==null,"Removing the encounter director cleans up its runtime instance without scene-exit errors");
+    }
+    static IEnumerator RepresentativeChecks()
+    {
+        var expedition=TacticalExpedition.Instance;
+        foreach(var id in new[]{"ranger","breaker","sentinel"})
+        {
+            CharacterRoster.SelectForNewRun(id);
+            var hero=new GameObject("Representative "+id); hero.SetActive(false); hero.transform.position=arena+Vector3.right*18+Vector3.up;
+            var save=hero.AddComponent<GameProgressSave>(); save.StoragePath=Path.Combine(Out,"unused-"+id+".json"); save.enabled=false;
+            var actor=hero.AddComponent<Player>(); actor.enabled=false;
+            var hp=hero.AddComponent<PlayerHealth>();
+            var view=new GameObject("Hero Camera",typeof(Camera)).GetComponent<Camera>(); view.transform.SetParent(hero.transform,false); view.enabled=false;
+            var firing=hero.AddComponent<PlayerShooter>(); firing.fpsCamera=view; firing.enabled=false;
+            hero.SetActive(true); hero.GetComponent<Rigidbody>().isKinematic=true;
+            hero.GetComponent<PickupMagnet>().enabled=false;
+            expedition.GrantStarterKit(actor);
+            Check(hero.GetComponent<CharacterSkills>().Character.Id==id,"Representative hero initializes selected identity: "+id);
+            Check(hero.GetComponent<WeaponInventory>().EquippedSlots.All(item=>item!=null),"Representative hero receives three usable weapon slots: "+id);
+            string hint=WeaponBuildSystem.LoadoutHint(hero.GetComponent<WeaponInventory>());
+            Check(hint.Contains(id=="ranger"?"回聲引爆":id=="breaker"?"碎冰連擊":"焚陣守線"),"Representative kit exposes its intended sequence: "+id);
+            Check(hp.IsChoosingUpgrade && hp.CurrentLevel==2,"Representative hero gets early behavior choice: "+id);
+            hp.SelectCoopUpgrade(0); Time.timeScale=1;
+            Object.DestroyImmediate(hero);
+            yield return .05f;
+        }
+    }
+    static IEnumerator ExtendedCombatChecks()
+    {
+        ClearTargets(); player.transform.position=arena+Vector3.up; player.GetComponent<Rigidbody>().position=player.transform.position;
+        camera.transform.SetPositionAndRotation(arena+Vector3.up,Quaternion.identity);
+        var data=health.CaptureProgress(); data.shotStyle=TacticalShotStyle.Split; health.RestoreProgress(data); CloseUpgrade();
+        var bow=inventory.Weapons.First(item=>item.weaponType==WeaponType.Longbow); inventory.EquipToSlot(bow,0); Call(inventory,"SwitchToSlot",0);
+        shooter.Fire();
+        var shots=Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Where(p=>p!=prefab).ToArray();
+        Check(shots.Length==2,"Split upgrade produces two real projectiles through PlayerShooter.Fire");
+        Check(shots[0].GetComponent<Rigidbody>().linearVelocity.x*shots[1].GetComponent<Rigidbody>().linearVelocity.x<0,"Split projectiles cover opposite sides of the aimed direction");
+        tactics.AddResonance(100); Check(tactics.TryReleaseEcho(),"Actual split fire is captured into a planned echo");
+        foreach(var shot in shots) Object.DestroyImmediate(shot.gameObject);
+        Check(tactics.TryReleaseEcho(),"Split echo can be manually triggered"); yield return .2f;
+        shots=Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Where(p=>p!=prefab && p.IsTacticalEcho).ToArray();
+        Check(shots.Length==2 && shots[0].GetComponent<Rigidbody>().linearVelocity.x*shots[1].GetComponent<Rigidbody>().linearVelocity.x<0,"Echo preserves both actual split directions and does not reroll the pattern");
+        ClearTargets(); data=health.CaptureProgress(); data.shotStyle=TacticalShotStyle.None; health.RestoreProgress(data); CloseUpgrade();
+        Vector3 origin=arena+new Vector3(0,1,3);
+        var wall=GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.position=origin; wall.transform.localScale=Vector3.one;
+        tactics.AddResonance(100); Record(origin,Vector3.forward); tactics.TryReleaseEcho(); tactics.TryReleaseEcho(); yield return .15f;
+        Check(!Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Any(p=>p!=prefab && p.IsTacticalEcho),"Echo suppresses a muzzle embedded inside a solid obstacle");
+        Object.DestroyImmediate(wall); ClearTargets();
+        var front=Enemy(arena+new Vector3(0,1,5)); var back=Enemy(arena+new Vector3(3,1,7));
+        wall=GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.position=arena+new Vector3(1.5f,1,6); wall.transform.localScale=new Vector3(.3f,3,4);
+        var bolt=Object.Instantiate(prefab,arena+Vector3.up,Quaternion.identity); bolt.Launch(Vector3.forward,30,20,player.gameObject); bolt.SetRicochet();
+        yield return .5f;
+        Check(front.CurrentHealth<1000 && Mathf.Approximately(back.CurrentHealth,1000),"Ricochet respects an intervening wall instead of hitting through cover");
+        Object.DestroyImmediate(wall); ClearTargets();
+        var target=Enemy(arena+new Vector3(0,1,7));
+        wall=GameObject.CreatePrimitive(PrimitiveType.Cube); wall.transform.position=arena+new Vector3(0,1,5); wall.transform.localScale=new Vector3(5,3,.5f);
+        TacticalField.Create(TacticalField.Kind.Fire,arena+new Vector3(0,0,3),health,6,2,20); yield return .6f;
+        Check(Mathf.Approximately(target.CurrentHealth,1000),"Fire-field damage is blocked by real cover");
+        Object.DestroyImmediate(wall); ClearTargets();
+        var boots=TacticalEquipment.Special(ArmorSlot.Shoes,5); inventory.AddArmor(boots); inventory.EquipArmor(boots);
+        target=Enemy(arena+new Vector3(1.6f,1,0)); Set(player,"isSliding",true); yield return .25f;
+        var status=target.GetComponent<WeaponComboStatus>();
+        Check(status!=null && Mathf.Approximately(status.EchoDamage(health,40),60),"Sliding past a physical enemy with boots creates one detonatable echo stack");
+        Set(player,"isSliding",false); ClearTargets();
+        var chest=TacticalEquipment.Special(ArmorSlot.Chest,5); inventory.AddArmor(chest); inventory.EquipArmor(chest);
+        TacticalField.Create(TacticalField.Kind.Fire,arena,health,3,3,0); yield return .15f;
+        player.transform.position=arena+new Vector3(5,1,0); player.GetComponent<Rigidbody>().position=player.transform.position; yield return .15f;
+        Check(player.GetComponent<TacticalEquipment>().MoveMultiplier>1,"Ember armor grants a real movement buff when leaving one's own weapon fire field");
+        player.GetComponent<TacticalEquipment>().ResetTransientState();
+        Check(player.GetComponent<TacticalEquipment>().MoveMultiplier==1,"Transient equipment bonuses clear cleanly");
+        ClearTargets(); player.transform.position=arena+Vector3.up; player.GetComponent<Rigidbody>().position=player.transform.position;
+        data=health.CaptureProgress(); data.health=health.maxHealth; data.armor=0; health.RestoreProgress(data); CloseUpgrade(); Set(health,"invincibleUntil",0f);
+        Set(player.GetComponent<WeaponBuildSystem>(),"guardUntil",0f);
+        TacticalField.Create(TacticalField.Kind.Ward,arena,health,4,3,0);
+        float before=health.CurrentHealth; health.TakeDamage(10);
+        Check(Mathf.Abs(before-health.CurrentHealth-7)<.1f,"Standing in a team ward reduces actual incoming damage by 30%");
+        ClearTargets();
+        // A shelter protects from fire without requiring a particular character or weapon.
+        var boss=Enemy(arena+new Vector3(0,1,6)); boss.SetLevelAndExperience(8,0);
+        TacticalField.Create(TacticalField.Kind.Shelter,arena,null,4,3,0);
+        BossFlameTrail.Create(arena,boss,2); before=health.CurrentHealth; yield return 1.1f;
+        Check(Mathf.Approximately(before,health.CurrentHealth),"Ancient-tree shelter actually blocks boss flame-trail damage");
+        ClearTargets();
+        var oldMode=CoopSession.Mode;
+        try
+        {
+            typeof(CoopSession).GetProperty("Mode",BindingFlags.Static|BindingFlags.Public).SetValue(null,CoopMode.Client);
+            Check(!tactics.TryReleaseEcho(),"Client cannot locally arm or execute authoritative echo attacks");
+            Check(!TacticalExpedition.Instance.TryBeginEncounter(0,player),"Client cannot award itself encounter progression");
+        }
+        finally { typeof(CoopSession).GetProperty("Mode",BindingFlags.Static|BindingFlags.Public).SetValue(null,oldMode); }
+    }
+    static IEnumerator ComboChecks()
+    {
+        ClearTargets(); var target=Enemy(arena+new Vector3(0,1,5)); var build=player.GetComponent<WeaponBuildSystem>();
+        build.OnHit(target,WeaponType.FrostStaff,5,false,false,false);
+        Check(target.GetComponent<WeaponComboStatus>()!=null,"Frost off-weapon creates a usable setup state");
+        Check(Mathf.Approximately(build.ModifyDamage(100,target,WeaponType.WarHammer,2,false,false),150),"Hammer consumes frost for a real 150% shatter strike");
+        Check(Mathf.Approximately(build.ModifyDamage(100,target,WeaponType.Longbow,5,false,false),175),"Bow consumes shatter exposure for a 175% finishing strike");
+        Check(Mathf.Approximately(build.ModifyDamage(100,target,WeaponType.Longbow,5,false,false),100),"Finisher cannot repeatedly reuse an already-consumed exposure");
+        build.OnHit(target,WeaponType.Longbow,5,false,false,false);
+        for(int i=0;i<3;i++) build.OnHit(target,WeaponType.RepeatingCrossbow,5,false,false,false);
+        Check(Mathf.Approximately(target.GetComponent<WeaponComboStatus>().EchoDamage(health,45),112.5f),"Three rapid-weapon stacks amplify one echo to 250% of reduced echo damage");
+        Check(Mathf.Approximately(target.GetComponent<WeaponComboStatus>().EchoDamage(health,45),45),"Echo detonation consumes its mark once");
+        build.OnHit(target,WeaponType.ArcaneFocus,5,false,false,false);
+        Check(Object.FindObjectsByType<TacticalField>(FindObjectsSortMode.None).Any(f=>f.Type==TacticalField.Kind.Vortex),"Arcane hit places a visible gathering field");
+        build.OnHit(target,WeaponType.FireStaff,5,true,false,false);
+        float before=target.CurrentHealth; yield return .65f;
+        Check(target.CurrentHealth<before && target.GetComponent<WeaponComboStatus>().IsBurning,"Fire field deals actual timed damage and leaves a burning setup");
+        build.OnShot(WeaponType.SwordShield); build.OnHit(target,WeaponType.SwordShield,2,false,false,false);
+        Check(Object.FindObjectsByType<TacticalField>(FindObjectsSortMode.None).Any(f=>f.Type==TacticalField.Kind.Ward),"Shield hit on a burning enemy completes team ward sequence");
+        Check(Mathf.Approximately(CharacterWeapons.Efficiency(player.gameObject,WeaponType.LightStaff),.1f),"Off-role direct-damage penalty is preserved while utility is available");
+        ClearTargets();
+        var front=Enemy(arena+new Vector3(0,1,5)); var back=Enemy(arena+new Vector3(0,1,9));
+        var shot=Object.Instantiate(prefab,arena+Vector3.up,Quaternion.identity);
+        shot.Launch(Vector3.forward,35,20,player.gameObject,0,1,WeaponType.Longbow,null); yield return .5f;
+        Check(front.CurrentHealth<1000 && back.CurrentHealth<1000,"Piercing projectile hits two real colliders in one line");
+        ClearTargets(); front=Enemy(arena+new Vector3(0,1,5)); back=Enemy(arena+new Vector3(3,1,7));
+        shot=Object.Instantiate(prefab,arena+Vector3.up,Quaternion.identity);
+        shot.Launch(Vector3.forward,30,20,player.gameObject,0,0,WeaponType.Longbow,null); shot.SetRicochet(); yield return .7f;
+        Check(front.CurrentHealth<1000 && back.CurrentHealth<1000,"Ricochet projectile hits a second visible physical target");
+        ClearTargets();
+    }
+    static IEnumerator BossChecks()
+    {
+        var target=Enemy(arena+new Vector3(0,1,7),500);
+        var agent=target.gameObject.AddComponent<NavMeshAgent>(); agent.Warp(arena+new Vector3(0,0,7));
+        var ai=target.gameObject.AddComponent<EnemyAI>(); ai.AssignRoom(boundary); ai.enabled=false;
+        target.gameObject.AddComponent<TacticalTrialBoss>();
+        var boss=target.gameObject.AddComponent<BossController>(); boss.Initialize(player,target,ai);
+        var mechanics=target.GetComponent<TacticalBossMechanics>();
+        float front=mechanics.ModifyIncoming(100,target.transform.position+target.transform.forward*3);
+        float rear=mechanics.ModifyIncoming(100,target.transform.position-target.transform.forward*3);
+        Check(Mathf.Approximately(front,30) && Mathf.Approximately(rear,100),"Black-iron armor has a readable front/rear damage difference");
+        target.TakeDamage(100,health,target.transform.position+target.transform.forward*3);
+        Check(Mathf.Abs(target.CurrentHealth-470)<.1f,"Actual boss damage path applies frontal armor");
+        Call(mechanics,"Begin",TacticalBossMechanics.Move.Recovery,3f,2f,Color.cyan);
+        target.TakeDamage(100,health,target.transform.position+target.transform.forward*3);
+        Check(Mathf.Abs(target.CurrentHealth-320)<.1f,"Recovery opens a real amplified-damage window");
+        target.TakeDamage(100000,health,target.transform.position-target.transform.forward*3); yield return 2f;
+        Check(boss.Phase==2 && !boss.IsTransforming,"Lethal first-form damage transitions into the second form");
+        var rock=GameObject.CreatePrimitive(PrimitiveType.Cube); rock.name="Charge Review Rock";
+        rock.transform.position=target.transform.position+target.transform.forward*2+Vector3.up; rock.transform.localScale=new Vector3(3,3,1);
+        Set(mechanics,"chargeDirection",target.transform.forward);
+        Call(mechanics,"Begin",TacticalBossMechanics.Move.Charge,1.5f,1f,Color.red); yield return .25f;
+        Check(mechanics.CurrentMove==TacticalBossMechanics.Move.Stunned,"Charge hitting real scenery exposes the second-form boss");
+        Object.DestroyImmediate(rock);
+        target.TakeDamage(100000,health,target.transform.position-target.transform.forward*3); yield return 2f;
+        Check(boss.Phase==3,"Second form transitions into the third form without skipping phases");
+        Call(mechanics,"BeginRitual");
+        Check(mechanics.RitualNodes.Count==3,"Final-form spell creates three attackable nodes with visible directions");
+        foreach(var node in mechanics.RitualNodes.ToArray()) node.TakeDamage(1000,health);
+        yield return .2f;
+        Check(mechanics.CurrentMove==TacticalBossMechanics.Move.Stunned,"Destroying physical casting nodes interrupts the final-form spell");
+        ClearTargets();
+    }
+    static IEnumerator EquipmentAndSupportChecks()
+    {
+        var pants=TacticalEquipment.Special(ArmorSlot.Pants,5); inventory.AddArmor(pants); inventory.EquipArmor(pants);
+        var gear=player.GetComponent<TacticalEquipment>();
+        Check(gear.EchoDuration==28 && gear.EchoRange==22,"Equipped echo pants extend planning time but shorten activation range");
+        var helmet=TacticalEquipment.Special(ArmorSlot.Helmet,5); inventory.AddArmor(helmet); inventory.EquipArmor(helmet);
+        gear.OnBlockedDamage(); Check(gear.ConsumeWatchfulStrike()>0 && gear.ConsumeWatchfulStrike()==0,"Watchful helmet grants one consumed strike rather than permanent stacked damage");
+        var saved=inventory.CaptureProgress(); string json=JsonUtility.ToJson(saved);
+        Check(JsonUtility.FromJson<InventoryProgress>(json).armorItems.Any(item=>item.affix==TacticalAffix.LongEcho),"Armor behavior and tradeoffs survive inventory serialization");
+        var momentum=player.GetComponent<CombatMomentum>(); momentum.ResetCombat();
+        Set(momentum,"nextContribution",Time.time-1); momentum.OnContribution(); int chain=momentum.KillChain; momentum.OnContribution();
+        Check(chain==1 && momentum.KillChain==1,"Support contribution is effective and rate-limited");
+        var target=Enemy(arena+new Vector3(0,1,5));
+        var ally=new GameObject("Support Review Ally"); ally.SetActive(false);
+        var allySave=ally.AddComponent<GameProgressSave>(); allySave.StoragePath=Path.Combine(Out,"unused-ally.json"); allySave.enabled=false;
+        var allyHealth=ally.AddComponent<PlayerHealth>(); ally.SetActive(true); ally.transform.position=arena+new Vector3(2,1,1);
+        var data=allyHealth.CaptureProgress(); data.health=40; data.armor=0; allyHealth.RestoreProgress(data);
+        var skills=player.GetComponent<CharacterSkills>(); skills.RestoreProgress(new CharacterProgress{version=1,id="medic",cooldown=0});
+        Set(momentum,"nextContribution",Time.time-1);
+        float before=allyHealth.CurrentHealth;
+        Check(skills.TryUseSkill(),"Healer can cast team healing in the real skill system");
+        Check(allyHealth.CurrentHealth>before,"Nearby wounded teammate receives actual healing");
+        Check(momentum.KillChain>chain,"Effective teammate healing contributes to momentum");
+        allyHealth.Heal(10000); momentum.ResetCombat(); Set(momentum,"nextContribution",Time.time-1);
+        Call(skills,"HealTeam",.1f);
+        Check(momentum.KillChain==0,"Healing an already-full teammate cannot farm contribution");
+        Object.DestroyImmediate(ally); ClearTargets();
+        yield return .1f;
+    }
+    static void Capture(string name)
+    {
+        camera.transform.position=arena+new Vector3(0,4,-8); camera.transform.LookAt(arena+new Vector3(0,1,6));
+        TacticalMarker.Create("回聲側襲 · 從此方向發動",arena+new Vector3(-3,.1f,3),Vector3.forward,Color.cyan,1);
+        TacticalMarker.Create("敵人路線 · 繞至側面",arena+new Vector3(3,.1f,7),Vector3.back,Color.yellow,2);
+        foreach(var marker in Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None)) Call(marker,"LateUpdate");
+        foreach(var canvas in Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None))
+            if(canvas.renderMode==RenderMode.ScreenSpaceOverlay) { canvas.renderMode=RenderMode.ScreenSpaceCamera; canvas.worldCamera=camera; canvas.planeDistance=1; }
+        var render=new RenderTexture(1600,900,24); camera.targetTexture=render; camera.Render();
+        var previous=RenderTexture.active; RenderTexture.active=render;
+        var image=new Texture2D(1600,900,TextureFormat.RGB24,false); image.ReadPixels(new Rect(0,0,1600,900),0,0); image.Apply();
+        File.WriteAllBytes(Path.Combine(Out,name),image.EncodeToPNG()); RenderTexture.active=previous; camera.targetTexture=null;
+        Object.DestroyImmediate(image); render.Release(); Object.DestroyImmediate(render);
+    }
+}

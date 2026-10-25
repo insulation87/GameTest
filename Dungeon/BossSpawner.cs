@@ -12,6 +12,16 @@ public class BossSpawner : MonoBehaviour
     public bool HasSpawned { get; private set; }
     public BossController CurrentBoss { get; private set; }
 
+    public void RestoreProgress(GameProgressState data)
+    {
+        if (!data.bossSpawned) return;
+        if (data.bossDefeated) { HasSpawned = true; return; }
+        bossMaxHealth = Mathf.Max(1f, data.bossMaxHealth / ExpeditionMaps.Current.Health);
+        if (!TrySpawnBoss()) return;
+        CurrentBoss.RestoreProgress(data.bossPhase);
+        CurrentBoss.GetComponent<EnemyHealth>().RestoreSavedHealth(data.bossHealth);
+    }
+
     public void SpawnBoss()
     {
         TrySpawnBoss();
@@ -52,7 +62,7 @@ public class BossSpawner : MonoBehaviour
 
         if (health != null)
         {
-            health.SetMaxHealth(bossMaxHealth);
+            health.SetMaxHealth(bossMaxHealth * ExpeditionMaps.Current.Health);
             health.SetDungeonFloor(3);
             health.SetLevelAndExperience(100, 10);
             health.progressionDropChance = 0f;
@@ -78,6 +88,12 @@ public class BossSpawner : MonoBehaviour
         if (controller == null)
             controller = boss.AddComponent<BossController>();
         controller.Initialize(player, health, ai);
+        var expedition = TacticalExpedition.Instance;
+        if (expedition != null && expedition.Progress.treeRescued)
+            TacticalField.Create(TacticalField.Kind.Shelter, boss.transform.position - boss.transform.forward * 7,
+                null, 3.5f, 3600, 0).BindBoss(health);
+        if (expedition != null && !expedition.Progress.altarDestroyed)
+            boss.AddComponent<TacticalAltarHazard>();
         if (healthBar != null) healthBar.SetBossPhases(controller);
         EnemyCharacterVisual.Ensure(boss);
 

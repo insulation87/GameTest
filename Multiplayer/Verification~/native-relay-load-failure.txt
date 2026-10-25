@@ -1,0 +1,8 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Relay failure is injected during actual asynchronous Map1 loading
+Loading failure clears multiplayer and leaves the actual menu without stray players
+Failure during map loading preserves the original single-player slot byte-for-byte
+No unexpected Unity gameplay errors: 

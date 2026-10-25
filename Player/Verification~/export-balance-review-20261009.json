@@ -1,0 +1,16 @@
+﻿{
+    "Result":  "PASS",
+    "Export":  "D:\\GameTest3\\GameTest\\Builds\\Windows64-20261009-Balance",
+    "Archive":  "D:\\GameTest3\\GameTest\\Builds\\GameTest-Windows64-20261009-Balance.zip",
+    "ArchiveSHA256":  "6127D8942EDB9BFF5FD20E78F1C2CC7CC2C8AB76CE2B5F0292A3D1E848EBA01A",
+    "ArchiveBytes":  98383865,
+    "RuntimeFiles":  190,
+    "RuntimeBytes":  261531544,
+    "StartupPID":  26372,
+    "StartupExecutable":  "C:\\Users\\User\\AppData\\Local\\Temp\\GameTest-UnzipReview-0e8d2bfb26af4828b6714d5676b91368\\GameTest\\GameTest.exe",
+    "StartupLog":  "D:\\GameTest3\\GameTest\\Assets\\Script\\Player\\Verification~\\export-balance-startup-20261009.log",
+    "StartupStartedUTC":  "2026-10-09T02:58:02.9106853Z",
+    "ReleaseInstrumentationExcluded":  true,
+    "StartupSeconds":  127.8,
+    "StartupResult":  "Exact ZIP extraction started normally with D3D11; no logged exceptions, missing scripts, or startup errors."
+}

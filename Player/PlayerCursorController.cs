@@ -35,13 +35,18 @@ public class PlayerCursorController : MonoBehaviour
     {
         if (!isActiveAndEnabled)
             return;
+        if (CoopSession.IsMultiplayer)
+        {
+            var actor = CoopInput.Actor(this);
+            if (actor != null && (!actor.Local || actor.LocalIndex != 0)) return;
+        }
 
         if (inventory == null)
             inventory = GetComponent<WeaponInventory>();
         if (health == null)
             health = GetComponent<PlayerHealth>();
 
-        bool menuOpen = (inventory != null && (inventory.IsOpen || inventory.IsPaused)) ||
+        bool menuOpen = GameSceneFlow.IsLoading || DungeonVictoryUI.IsOpen || (inventory != null && (inventory.IsOpen || inventory.IsPaused)) ||
                         (health != null && health.IsChoosingUpgrade);
         SetCursor(!Application.isFocused || menuOpen);
     }

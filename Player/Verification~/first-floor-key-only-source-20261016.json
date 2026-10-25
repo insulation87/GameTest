@@ -1,0 +1,18 @@
+﻿[
+    {
+        "file":  "NPC/EnemyHealth.cs",
+        "sha256":  "109C00D2D74273386F133537CEC96466B8F3B641B7ED9671CDACC35BC9CE42B4"
+    },
+    {
+        "file":  "Dungeon/TreasureChestDirector.cs",
+        "sha256":  "0ED29F2719DEFB0605CF0B077A29786E52BA4D0954D258401257BE36F3AB5311"
+    },
+    {
+        "file":  "Dungeon/TreasureChest.cs",
+        "sha256":  "52939674A44F41661097892E7DE0B5B57B20B9B2C4938927C991E4FCD132443B"
+    },
+    {
+        "file":  "Dungeon/TacticalExpedition.cs",
+        "sha256":  "D29C79ED275394A3EB0AE926913A4CCC15B7BE07CA623AC5F6C5391407082E9B"
+    }
+]

@@ -1,0 +1,55 @@
+PASS
+PASS Review runs in actual Unity Editor Play Mode
+PASS Save directory and active path are isolated from player progress
+PASS Actual authored Map1 and encounters initialize
+PASS Actual Map1 prefab uses cap 150, interval 0.35s, and batches of 3
+PASS Saved production opening uses six enemies with 0.15s delay and burst spacing
+PASS Saved production monster HP increases by 20%, with a maximum grown cap of 240
+PASS Spawner review uses a real first-region room and baked NavMesh
+PASS Real room activation finds the stationary player
+PASS One actual room spawn pass creates three enemies together
+PASS Real spawned enemies use increased health range
+PASS New batch respects player safe distance
+PASS Batch members keep NPC spacing rather than overlap
+PASS Batch members are placed on actual navigation
+PASS Actual old timed room spawn loop: 7 enemies in 3.01s
+PASS Actual new timed room spawn loop: 27 enemies in 3.00s
+PASS New live spawn loop produces at least twice as many enemies over three seconds (7 -> 27)
+PASS Partial batches stop exactly at the alive cap of eight
+PASS Continuous spawning cannot exceed the configured cap
+PASS Real lethal damage frees capacity and the continuous loop replenishes it
+PASS Earlier removal of the first-floor progression item remains enforced
+PASS Pause stops spawning and difficulty elapsed time
+PASS At 90 active seconds batches grow to four, cap to 180, and interval below 0.16s
+PASS The 90-second difficulty stage instantiates a real batch of four
+PASS At 270 active seconds growth reaches capped batches of six, 240 alive and 0.1s interval
+PASS The maximum difficulty stage instantiates six real enemies in a batch
+PASS Finite room waves respect seven-enemy room limit even with three-enemy batches
+PASS Finite room waves do not continue beyond the room limit
+PASS Global spawn loop also creates three enemies in its first pass
+PASS Global spawn loop respects alive cap during partial batches
+PASS Actual denser meadow encounter begins: 0
+PASS Encounter 0, wave 1: actual count is 5
+PASS Trial enemy HP is increased 20% on wave 1
+PASS Real next-wave delay is about 1.5 seconds (1.80s), shorter than old 3 seconds
+PASS Encounter 0, wave 2: actual count is 5
+PASS Trial enemy HP is increased 20% on wave 2
+PASS Denser waves complete and award progression: 0
+PASS Actual denser meadow encounter begins: 1
+PASS Encounter 1, wave 1: actual count is 6
+PASS Trial enemy HP is increased 20% on wave 1
+PASS Real next-wave delay is about 1.5 seconds (1.76s), shorter than old 3 seconds
+PASS Encounter 1, wave 2: actual count is 6
+PASS Trial enemy HP is increased 20% on wave 2
+PASS Real next-wave delay is about 1.5 seconds (1.84s), shorter than old 3 seconds
+PASS Encounter 1, wave 3: actual count is 6
+PASS Trial enemy HP is increased 20% on wave 3
+PASS Denser waves complete and award progression: 1
+PASS Harder meadow trials retain equipment rewards
+PASS Actual Map1 encounter starts: 2
+PASS Real death paths complete encounter and all waves: 2
+PASS Harder trial boss completes guaranteed progression without triggering campaign victory
+PASS Forest rescue remains available
+PASS Forest event spawns five real guards with 300 HP
+PASS Updated campaign progress saves to the isolated path
+PASS No unexpected game/runtime errors: 

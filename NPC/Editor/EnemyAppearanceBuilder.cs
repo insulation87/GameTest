@@ -83,7 +83,7 @@ public static class EnemyAppearanceBuilder
     [MenuItem("Tools/Character/Validate Enemy Combat Rules")]
     public static void ValidateCombatRules()
     {
-        foreach (int level in new[] {1,20,21,100})
+        foreach (int level in new[] {1,9,10,11,20,21,100})
         {
             float expected = 1f + (level - 1) / 5f;
             if (Mathf.Abs(EnemyCombatRules.DamageAtLevel(level) - expected) > 0.00001f)
@@ -92,7 +92,7 @@ public static class EnemyAppearanceBuilder
         for (int level = 1; level < 100; level++)
             if (Mathf.Abs(EnemyCombatRules.DamageAtLevel(level + 1) - EnemyCombatRules.DamageAtLevel(level) - .2f) > .00001f)
                 throw new InvalidDataException("Incorrect per-level damage increment.");
-        if (EnemyCombatRules.AllowsRanged(20) || !EnemyCombatRules.AllowsRanged(21))
+        if (EnemyCombatRules.AllowsRanged(9) || !EnemyCombatRules.AllowsRanged(10) || !EnemyCombatRules.AllowsRanged(11))
             throw new InvalidDataException("Incorrect ranged-weapon level gate.");
         Debug.Log("ENEMY_LEVEL_RULES_OK");
     }

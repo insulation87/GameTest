@@ -45,7 +45,8 @@ public sealed class GameMusic : MonoBehaviour
     public static MusicTheme SelectTheme(Player player)
     {
         if (player == null)
-            return Object.FindFirstObjectByType<MainMenuController>() != null ? MusicTheme.Menu : MusicTheme.None;
+            return Object.FindFirstObjectByType<MainMenuController>() != null ||
+                Object.FindFirstObjectByType<LoginSceneController>() != null ? MusicTheme.Menu : MusicTheme.None;
         PlayerHealth playerHealth = player.GetComponent<PlayerHealth>();
         if (playerHealth != null && playerHealth.IsDead) return MusicTheme.Dungeon;
         foreach (BossController boss in Object.FindObjectsByType<BossController>(FindObjectsSortMode.None))
@@ -80,7 +81,7 @@ public sealed class GameMusic : MonoBehaviour
         {
             levels[i] = Mathf.MoveTowards(levels[i], i == target ? 1f : 0f,
                 Time.unscaledDeltaTime / Mathf.Max(.1f, crossfadeSeconds));
-            sources[i].volume = levels[i] * Mathf.Clamp01(musicVolume) * duck;
+            sources[i].volume = levels[i] * Mathf.Clamp01(musicVolume) * GameSettings.Current.musicVolume * duck;
             if (i != target && levels[i] <= 0f && themes[i] != MusicTheme.None)
             {
                 sources[i].Stop();

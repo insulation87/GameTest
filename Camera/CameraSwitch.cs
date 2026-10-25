@@ -13,6 +13,10 @@ public class CameraSwitch : MonoBehaviour
 
     private bool isFPS;
 
+    public Camera ActiveCamera => isFPS ? fpsCamera : tpsCamera;
+    public bool IsFirstPerson => isFPS;
+    public void SetCoopView(bool firstPerson) { if (isFPS != firstPerson) SetMode(firstPerson); }
+
     void Start()
     {
         SetMode(startInFirstPerson);
@@ -23,7 +27,7 @@ public class CameraSwitch : MonoBehaviour
         if (Time.timeScale <= 0f)
             return;
 
-        if (Input.GetKeyDown(KeyCode.C))
+        if (CoopInput.Down(this, CoopButton.View, KeyCode.C))
         {
             GameAudio.Local(GameSound.CameraSwitch);
             SetMode(!isFPS);

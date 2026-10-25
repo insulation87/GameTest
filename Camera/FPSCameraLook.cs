@@ -38,6 +38,8 @@ public class FPSCameraLook : MonoBehaviour
 
     void OnEnable()
     {
+        GameSettings.Changed += ApplyCameraSettings;
+        ApplyCameraSettings();
         if (player != null)
             yaw = player.eulerAngles.y;
 
@@ -49,15 +51,19 @@ public class FPSCameraLook : MonoBehaviour
     void FixedUpdate()
     {
         if (playerRb != null)
-            playerRb.MoveRotation(targetPlayerRotation);
+        {
+            if (playerController != null) playerController.RotateWithCollision(targetPlayerRotation);
+            else playerRb.MoveRotation(targetPlayerRotation);
+        }
     }
 
     void LateUpdate()
     {
         if (player == null) return;
 
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
-        float mouseY = Input.GetAxis("Mouse Y") * mouseSensitivity * Time.deltaTime;
+        Vector2 look = CoopInput.Look(this, mouseSensitivity);
+        float mouseX = look.x;
+        float mouseY = look.y;
 
         yaw += mouseX;
         targetPlayerRotation = Quaternion.Euler(0f, yaw, 0f);
@@ -72,8 +78,7 @@ public class FPSCameraLook : MonoBehaviour
         }
 
         Vector3 stanceOffset = Vector3.up * GetStanceHeightOffset();
-        transform.position = player.position + Quaternion.Euler(0f, yaw, 0f) *
-            (cameraOffset + Vector3.forward * forwardOffset) + stanceOffset;
+        PlaceCamera(stanceOffset);
         transform.rotation = Quaternion.Euler(xRotation, yaw, 0f);
     }
 
@@ -82,10 +87,24 @@ public class FPSCameraLook : MonoBehaviour
         if (player == null) return;
 
         Vector3 stanceOffset = Vector3.up * GetStanceHeightOffset();
-        transform.position = player.position + Quaternion.Euler(0f, yaw, 0f) *
-            (cameraOffset + Vector3.forward * forwardOffset) + stanceOffset;
+        PlaceCamera(stanceOffset);
         transform.rotation = Quaternion.Euler(xRotation, yaw, 0f);
     }
+
+    void ApplyCameraSettings()
+    {
+        Camera view = GetComponentInChildren<Camera>(true);
+        if (view != null && !view.orthographic) view.fieldOfView = GameSettings.Current.fieldOfView;
+    }
+
+    void PlaceCamera(Vector3 stanceOffset)
+    {
+        Vector3 wanted = player.position + Quaternion.Euler(0f,yaw,0f) * (cameraOffset + Vector3.forward * forwardOffset) + stanceOffset;
+        Vector3 pivot = player.position + Vector3.up * cameraOffset.y + stanceOffset;
+        transform.position = CameraCollision.Resolve(player,pivot,wanted,GetComponentInChildren<Camera>(true));
+    }
+
+    void OnDisable() => GameSettings.Changed -= ApplyCameraSettings;
 
     float GetStanceHeightOffset()
     {
@@ -111,7 +130,10 @@ public class FPSCameraLook : MonoBehaviour
         targetPlayerRotation = Quaternion.Euler(0f, yaw, 0f);
 
         if (playerRb != null)
-            playerRb.rotation = targetPlayerRotation;
+        {
+            if (playerController != null) playerController.RotateWithCollision(targetPlayerRotation,true);
+            else playerRb.rotation = targetPlayerRotation;
+        }
         else if (player != null)
             player.rotation = targetPlayerRotation;
 

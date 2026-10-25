@@ -1,0 +1,45 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+A real TCP host opens the actual Map1: 
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+Remote character choice reaches the host
+Client keyboard input moves the host-authoritative actor
+Safe player placement at (111.00, 0.05, 26.80)
+Remote player cannot pass the locked forest portal
+Safe player placement at (111.00, 0.05, 26.80)
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Teammate pickups unlock shared forest guidance
+Remote portal travel preserves the host's separate meadow position
+Safe player placement at (531.00, 0.00, 128.80)
+Safe player placement at (531.00, 0.05, 178.80)
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Remote player reaches safe ancient forest ground
+Safe player placement at (951.00, 0.00, 128.80)
+Original NPC spawner creates a shared fantasy monster
+Host saves shared keys in the isolated cooperative profile
+Cooperative save persists outdoor layout and both collection goals
+Cooperative play does not overwrite the isolated single-player slot
+Gameplay camera produces a live render target
+No unexpected Unity gameplay errors: 

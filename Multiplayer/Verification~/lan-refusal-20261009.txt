@@ -1,0 +1,29 @@
+LAN connection refusal review — 2026-10-09
+
+No production gameplay code changed. Existing runtime tested in an isolated Unity project.
+Reproduced the exact Windows refusal message when connecting to loopback with no listener.
+Menu recovers after failure; matching host port connects and transfers messages in both directions.
+
+PASS 16 Play Mode checks
+Editor Search startup exceptions: 1
+Scope: same-machine TCP and menu failure handling; no second PC or router/firewall test.
+
+Checks:
+PASS Actual Unity Play Mode
+PASS No listener produces a connection refusal error
+REPRODUCED 無法連線，因為目標電腦拒絕連線。
+PASS Guest session uses only isolated project storage
+PASS Guest menu selects LAN
+PASS Default address points to joining computer itself
+PASS Menu reports failed TCP connection
+PASS Failure cleans up session without scene load
+PASS Action restored after failure
+PASS Action restored after failure
+PASS Action restored after failure
+PASS Matching address and listening port connect successfully
+PASS Client queues real TCP message
+PASS Host receives framed message
+PASS Host queues reply
+PASS Client receives reply
+PASS No game runtime errors: 
+PASS 16 Play Mode checks

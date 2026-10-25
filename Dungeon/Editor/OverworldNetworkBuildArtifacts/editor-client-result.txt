@@ -1,0 +1,26 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Second process joins through the real client scene-loading flow: 
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+Client initializes the minimap and region objective UI without owning a save
+Client owns its assigned actor and selected character
+Client does not simulate movement, collect duplicate loot or own saves
+Client NPC generation stays disabled
+Keyboard movement returns as a synchronized client pose
+Locked portal remains locked on the client
+Client cannot authorize a local portal teleport
+Client displays shared meadow collection and forest portal guidance
+Forest arrival syncs while the other actor stays in the meadow
+Client displays shared forest collection and ancient forest guidance
+Ancient forest arrival stays alive and grounded on the client
+Client receives and renders the host's actual monster geometry
+Gameplay camera produces a live render target
+Host disconnect returns client to MainMenu and removes stale actors
+Client does not write a single-player save
+No unexpected Unity gameplay errors: 

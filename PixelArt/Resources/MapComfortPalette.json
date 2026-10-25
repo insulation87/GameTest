@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "textureSaturation": 0.08,
+  "minimumShade": 0.78,
+  "mortarContrast": 0.12,
+  "grainStrength": 0.08,
+  "toneSteps": 64,
+  "materials": [
+    { "name": "StoneWall", "color": "#B8B0A3", "textureInfluence": 0.22 },
+    { "name": "Flagstone", "color": "#76878F", "textureInfluence": 0.14 },
+    { "name": "CutStone", "color": "#C9C4B5", "textureInfluence": 0.18 },
+    { "name": "Ceiling", "color": "#757D80", "textureInfluence": 0.10 },
+    { "name": "Oak", "color": "#7A5940", "textureInfluence": 0.30 },
+    { "name": "DarkIron", "color": "#49545D", "textureInfluence": 0.10 },
+    { "name": "Brass", "color": "#C7A45B", "textureInfluence": 0.10 },
+    { "name": "Crimson", "color": "#A34148", "textureInfluence": 0.10 },
+    { "name": "Ember", "color": "#F56E2E", "textureInfluence": 0.00 }
+  ]
+}

@@ -1,0 +1,195 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class HigherDifficultyStressReview
+{
+    const string Pending = "HigherDifficultyStressReview.Pending";
+    const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    static readonly List<string> results = new List<string>(), errors = new List<string>();
+    static readonly Stack<IEnumerator> steps = new Stack<IEnumerator>();
+    static double next, deadline;
+    static string Out => Path.GetFullPath(Path.Combine(Application.dataPath,"../.."));
+    static Player player;
+    static PlayerHealth health;
+    static PlayerShooter shooter;
+    static WeaponInventory inventory;
+    static RogueTactics tactics;
+    static Camera camera;
+    static Projectile prefab;
+    static Vector3 arena = new Vector3(10000,0,10000);
+    static DungeonRoomBoundary boundary;
+    static HigherDifficultyStressReview() { EditorApplication.playModeStateChanged += Changed; }
+    public static void Run()
+    {
+        if (!Application.isBatchMode || !Path.GetFullPath(Application.dataPath).StartsWith(Path.GetTempPath(),StringComparison.OrdinalIgnoreCase))
+            throw new Exception("Temporary batch copy required.");
+        PlayerSettings.companyName="CodexIsolatedReview";
+        PlayerSettings.productName="HigherDifficultyStressReview-"+new DirectoryInfo(Out).Name;
+        LoginSceneSetup.PlayFromCurrentScene();
+        EditorSceneManager.OpenScene("Assets/Scenes/Map1.unity",OpenSceneMode.Single);
+        foreach (var player in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save = player.GetComponent<GameProgressSave>() ?? player.gameObject.AddComponent<GameProgressSave>();
+            save.enabled = false;
+        }
+        foreach (var spawner in Object.FindObjectsByType<NPCSpawner>(FindObjectsSortMode.None)) spawner.enabled = false;
+        SessionState.SetBool(Pending,true); EditorApplication.EnterPlaymode();
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void IsolateSaves()
+    {
+        if (!Application.isBatchMode || !SessionState.GetBool(Pending,false)) return;
+        string path=Path.Combine(Out,"isolated-progress.json");
+        foreach(var suffix in new[]{"",".bak",".tmp"}) if(File.Exists(path+suffix)) File.Delete(path+suffix);
+        GameProgressSave.StartFresh=true;
+        foreach(var actor in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save=actor.GetComponent<GameProgressSave>();
+            save.StoragePath=path; save.enabled=true;
+        }
+    }
+    static void Changed(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.EnteredPlayMode || !SessionState.GetBool(Pending,false)) return;
+        SessionState.SetBool(Pending,false); results.Clear(); errors.Clear(); steps.Clear(); steps.Push(Checks());
+        next = EditorApplication.timeSinceStartup + .3; deadline = EditorApplication.timeSinceStartup + 360;
+        Application.logMessageReceived += Log; EditorApplication.update += Tick;
+    }
+    static void Log(string text,string stack,LogType type)
+    {
+        if (stack.Contains("UnityEditor.Search") || text.Contains("burst JIT compiler")) return;
+        if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) errors.Add(text + "\n" + stack);
+    }
+    static void Tick()
+    {
+        if (EditorApplication.timeSinceStartup < next) return;
+        try
+        {
+            if (EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("Play Mode review timeout");
+            while (steps.Count > 0)
+            {
+                var step = steps.Peek();
+                if (!step.MoveNext()) { steps.Pop(); continue; }
+                if (step.Current is IEnumerator nested) { steps.Push(nested); continue; }
+                next = EditorApplication.timeSinceStartup + (step.Current is float seconds ? seconds : .05); return;
+            }
+            Check(errors.Count == 0,"No unexpected game/runtime errors: " + string.Join("\n",errors)); Finish(0);
+        }
+        catch (Exception ex) { results.Add("FAIL " + ex); Finish(1); }
+    }
+    static void Finish(int code)
+    {
+        File.WriteAllText(Path.Combine(Out,"difficulty-stress-result.txt"),(code == 0 ? "PASS" : "FAIL") + "\n" + string.Join("\n",results) + "\n" + string.Join("\n",errors));
+        Application.logMessageReceived -= Log; EditorApplication.update -= Tick; EditorApplication.Exit(code);
+    }
+    static void Check(bool value,string message) { if (!value) throw new Exception(message); results.Add("PASS " + message); File.WriteAllLines(Path.Combine(Out,"difficulty-stress-live.txt"),results); }
+    static object Get(object target,string field) => target.GetType().GetField(field,Flags).GetValue(target);
+    static void Set(object target,string field,object value) => target.GetType().GetField(field,Flags).SetValue(target,value);
+    static object Call(object target,string method,params object[] args) => target.GetType().GetMethod(method,Flags).Invoke(target,args);
+    static void CloseUpgrade()
+    {
+        int guard = 0; while (health.IsChoosingUpgrade && guard++ < 24) health.SelectCoopUpgrade(0);
+        Time.timeScale = 1;
+    }
+    static void Move(Vector3 ground)
+    {
+        if (!player.TryGetTeleportPosition(ground,Quaternion.identity,out var pose)) throw new Exception("Unsafe test teleport: " + ground);
+        player.Teleport(pose,Quaternion.identity); Physics.SyncTransforms();
+    }
+    static IEnumerator KillEncounter(TacticalExpedition expedition,int id)
+    {
+        var markers = (TacticalMarker[])Get(expedition,"markers");
+        Move(markers[id].transform.position);
+        yield return .3f; CloseUpgrade();
+        if (expedition.ActiveEncounter < 0) expedition.TryBeginEncounter(id,player);
+        Check(expedition.ActiveEncounter == id,"Actual Map1 encounter starts: " + id);
+        for (int iteration = 0; iteration < 30 && !expedition.Progress.completed[id]; iteration++)
+        {
+            foreach (var enemy in expedition.EncounterEnemies.ToArray())
+            {
+                if (enemy == null || enemy.IsDead) continue;
+                var boss = enemy.GetComponent<BossController>();
+                if (boss != null && boss.IsTransforming) continue;
+                enemy.TakeDamage(100000,health,enemy.transform.position - enemy.transform.forward*3);
+            }
+            Set(expedition,"nextWave",Time.time - 1);
+            yield return id == 2 ? 1f : .25f; CloseUpgrade();
+        }
+        Check(expedition.Progress.completed[id],"Real death paths complete encounter and all waves: " + id);
+    }
+    static NPCSpawner spawner;
+    static string productionSettings;
+    static readonly List<int> samples=new List<int>();
+    static List<GameObject> Spawned => (List<GameObject>)Get(spawner,"spawnedNpcs");
+    static void ClearLoot()
+    {
+        foreach(var item in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            if(item is IMagneticPickup) Object.DestroyImmediate(item.gameObject);
+    }
+    static void ResetSpawn(float elapsed=0)
+    {
+        spawner.enabled=false;
+        foreach(var npc in Spawned.ToArray()) if(npc!=null) Object.DestroyImmediate(npc);
+        Spawned.Clear(); ClearLoot();
+        JsonUtility.FromJsonOverwrite(productionSettings,spawner); spawner.enabled=false;
+        typeof(NPCSpawner).GetProperty("ActiveGameplaySeconds").SetValue(spawner,elapsed);
+    }
+    static IEnumerator WaitGame(float seconds)
+    {
+        float until=Time.time+seconds; double limit=EditorApplication.timeSinceStartup+30;
+        while(Time.time<until)
+        {
+            if(EditorApplication.timeSinceStartup>limit) throw new Exception("Game time stalled during spawn review");
+            yield return .02f; CloseUpgrade();
+        }
+    }
+    static IEnumerator TimedSample(bool old)
+    {
+        ResetSpawn();
+        if(old)
+        {
+            spawner.initialSpawnBatchSize=1; spawner.spawnInterval=.5f; spawner.maxNpcCount=100;
+            spawner.openingWaveSize=spawner.enemiesPerRoom=3; spawner.openingWaveInterval=.2f;
+            spawner.roomSpawnDelay=.3f; spawner.roomSpawnRadius=9; spawner.increaseSpawningOverTime=false;
+        }
+        float begin=Time.time; spawner.enabled=true; yield return WaitGame(3);
+        spawner.enabled=false; int count=Spawned.Count;
+        Check(count>0,$"Actual {(old?"old":"new")} timed room spawn loop: {count} enemies in {Time.time-begin:0.00}s");
+        samples.Add(count);
+    }
+    static IEnumerator Checks()
+    {
+        yield return 1f;
+        Check(Application.isPlaying,"High-count review executes inside real Unity Play Mode");
+        player=Object.FindFirstObjectByType<Player>(); health=player.GetComponent<PlayerHealth>(); inventory=player.GetComponent<WeaponInventory>();
+        CloseUpgrade(); Set(health,"invincibleUntil",Time.time+1000);
+        Check(Application.companyName=="CodexIsolatedReview" && (string)Get(player.GetComponent<GameProgressSave>(),"sessionPath")==Path.Combine(Out,"isolated-progress.json"),"Stress review save path remains isolated");
+        TacticalExpedition.Instance.enabled=false;
+        player.enabled=false; player.GetComponent<Rigidbody>().isKinematic=true; player.GetComponent<PickupMagnet>().enabled=false;
+        spawner=Object.FindFirstObjectByType<NPCSpawner>(); productionSettings=JsonUtility.ToJson(spawner);
+        foreach(int elapsed in new[]{0,270})
+        {
+            ResetSpawn(elapsed); int cap=elapsed==0?150:240;
+            for(int i=0;i<cap;i++)
+                if(!spawner.TrySpawnNpc()) throw new Exception($"Safe placement failed at {i}/{cap} actual enemies");
+            Check(Spawned.Count==cap && spawner.CurrentMaxNpcCount==cap,$"Actual production spawner safely instantiates {cap} enemies across Map1 rooms");
+            Check(!spawner.TrySpawnNpc() && Spawned.Count==cap,$"A further spawn is rejected at the real {cap}-enemy cap");
+            Check(Spawned.All(n=>n.GetComponent<EnemyHealth>().maxHealth>=60 && n.GetComponent<EnemyHealth>().maxHealth<=240),$"All {cap} physical enemies have the raised health range");
+            spawner.enabled=true; yield return WaitGame(.7f);
+            Check(Spawned.Count==cap && Spawned.All(n=>n!=null && !n.GetComponent<EnemyHealth>().IsDead),$"{cap} live enemies remain within the cap while the real spawn loop runs");
+            Check(Spawned.All(n=>n.GetComponent<NavMeshAgent>().isOnNavMesh),$"All {cap} enemies remain on valid navigation after AI and physics updates");
+        }
+        ResetSpawn();
+    }
+}

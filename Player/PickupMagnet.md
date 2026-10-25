@@ -8,7 +8,7 @@ Defaults: 3 m attraction radius, 3 m/s starting speed, 14 m/s maximum speed,
 24 m/s² acceleration, and 0.35 m final collection distance. The destination is
 the player's body collider center, so it also follows crouching.
 
-Weapons, health packs, experience, grenades and floor keys share their existing
+Weapons, health packs, experience and floor keys share their existing
 contact collection logic with the magnet. The magnet pauses weapon hovering
 while attracting, then resumes hovering at the current position if interrupted.
 Dynamic pickups temporarily become kinematic; their gravity and body mode are

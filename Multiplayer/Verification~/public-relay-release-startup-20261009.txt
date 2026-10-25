@@ -1,0 +1,1 @@
+PASS actual release remained running for 10 seconds; Unity engine initialized; no startup exceptions; native/Editor test types absent. Log checked after closing the owned process because Unity exclusively locks its log while running. No login, map or player save operation performed.

@@ -1,0 +1,26 @@
+﻿[
+    {
+        "file":  "NPC/EnemyHealth.cs",
+        "sha256":  "07E7BDE701A4D170B34B37FC92B62973109BF4E543ECAECE7476E99E84FDE561"
+    },
+    {
+        "file":  "Player/PlayerShooter.cs",
+        "sha256":  "C361FA6382883182929A9993920673F1D9798293D685AEA61C5CADE30ACA7439"
+    },
+    {
+        "file":  "Player/GameProgressState.cs",
+        "sha256":  "1B6CDE10660AA3983E94E92AFF552A716BDAC9F2CDEB846FDF7C9EC8C6EEAD22"
+    },
+    {
+        "file":  "Dungeon/TreasureChestDirector.cs",
+        "sha256":  "D2F032A4AAC0C1C47FDB796553AE95FE33D9566AB58B1D2299573968B9C193A2"
+    },
+    {
+        "file":  "Dungeon/TreasureChest.cs",
+        "sha256":  "EEDFF11AB90C7E6FE854DC1270565B3D10A25F39F91CEDD702FDAC76792E65B6"
+    },
+    {
+        "file":  "Dungeon/TacticalExpedition.cs",
+        "sha256":  "FFED55C4199C0446B2C89F4316DAEC0D45480C5E2B141C458E899DD83DB742AA"
+    }
+]

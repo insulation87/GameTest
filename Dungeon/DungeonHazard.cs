@@ -2,10 +2,10 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
 
-public enum DungeonHazardKind { Spikes, CollapsingFloor }
+public enum DungeonHazardKind { Spikes, CollapsingFloor, FlameVent, SweepingBlade, BlastRune }
 public enum DungeonHazardState { Ready, Warning, Active, Recovering }
 
-public sealed class DungeonHazard : MonoBehaviour
+public sealed partial class DungeonHazard : MonoBehaviour
 {
     public DungeonHazardKind kind;
     [Min(.2f)] public float warningSeconds = .9f;
@@ -13,6 +13,9 @@ public sealed class DungeonHazard : MonoBehaviour
     [Min(0f)] public float damage = 35f;
     public DungeonHazardState State { get; private set; }
     public const float Width = 2.8f;
+    static readonly HashSet<DungeonHazard> active = new HashSet<DungeonHazard>();
+    public static IReadOnlyCollection<DungeonHazard> All => active;
+    public float UnsafeHalfSize => kind == DungeonHazardKind.BlastRune ? BlastRadius : Width * .5f;
     readonly Collider[] overlaps = new Collider[32];
     readonly HashSet<PlayerHealth> hitThisCycle = new HashSet<PlayerHealth>();
     readonly List<Material> materials = new List<Material>();
@@ -22,10 +25,17 @@ public sealed class DungeonHazard : MonoBehaviour
     BoxCollider support;
     float elapsed;
     Color safeColor;
+    float nextProbe;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetRegistry() => active.Clear();
+    void OnEnable() => active.Add(this);
+    void OnDisable() => active.Remove(this);
 
     public void Initialize(DungeonHazardKind type)
     {
         kind = type;
+        if (type >= DungeonHazardKind.FlameVent) { BuildNewMechanism(); return; }
         Material metal = Material(new Color(.17f,.19f,.22f));
         Material stone = Material(new Color(.31f,.27f,.22f));
         safeColor = type == DungeonHazardKind.Spikes ? new Color(.36f,.19f,.035f) : new Color(.5f,.3f,.07f);
@@ -78,10 +88,13 @@ public sealed class DungeonHazard : MonoBehaviour
 
     void Update()
     {
-        if (movingPart == null || Time.timeScale <= 0f) return;
+        if (movingPart == null || Time.timeScale <= 0f || CoopSession.IsClient || GameSceneFlow.IsLoading || DungeonVictoryUI.IsOpen) return;
+        if (kind >= DungeonHazardKind.FlameVent) { TickNewMechanism(); return; }
         elapsed += Time.deltaTime;
-        if (State == DungeonHazardState.Ready && HasPlayer(.13f,.2f))
+        if (State == DungeonHazardState.Ready && Time.time >= nextProbe)
         {
+            nextProbe = Time.time + .12f;
+            if (!HasPlayer(.13f,.2f)) return;
             State=DungeonHazardState.Warning; elapsed=0;
             GameAudio.At(kind==DungeonHazardKind.Spikes?GameSound.TrapWarning:GameSound.FloorCrack,transform.position);
         }
@@ -126,7 +139,11 @@ public sealed class DungeonHazard : MonoBehaviour
     bool HasPlayer(float centerY,float height)
     {
         int count=Query(centerY,height);
-        for(int i=0;i<count;i++) if(overlaps[i].GetComponentInParent<PlayerHealth>()!=null) return true;
+        for(int i=0;i<count;i++)
+        {
+            var health = overlaps[i].GetComponentInParent<PlayerHealth>();
+            if (health != null && !health.IsDead && CanAffect(health)) return true;
+        }
         return false;
     }
     void DamagePlayers(bool pit)
@@ -135,7 +152,7 @@ public sealed class DungeonHazard : MonoBehaviour
         for(int i=0;i<count;i++)
         {
             PlayerHealth health=overlaps[i].GetComponentInParent<PlayerHealth>();
-            if(health==null || health.IsDead || hitThisCycle.Contains(health)) continue;
+            if(health==null || health.IsDead || hitThisCycle.Contains(health) || !CanAffect(health)) continue;
             // Do not consume this cycle's hit while respawn immunity is active.
             if (!pit && health.IsInvincible) continue;
             hitThisCycle.Add(health);

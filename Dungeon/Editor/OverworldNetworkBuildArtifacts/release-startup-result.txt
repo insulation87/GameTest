@@ -1,0 +1,5 @@
+PASS: deployed formal exe ran for 65 seconds without runtime exception or missing-script diagnostics.
+Exe: D:\GameTest3\GameTest\Builds\Windows64-20261008\GameTest.exe
+Validation arguments: none
+Graphics: Direct3D 11 initialized
+Hidden process startup only; visible-window interaction remains untested.

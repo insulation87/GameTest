@@ -1,0 +1,14 @@
+PASS
+Invalid account token is refused by backend
+Unknown room is refused
+Room code is random and valid
+Duplicate account in same room is refused
+Relay stamps trusted client sender ID
+Relay stamps host ID and preserves payload
+Client cannot route data directly to or impersonate another client
+Room admits host plus three clients only
+Token renewal cannot switch account identity
+Disconnected peer is removed and host notified
+Host can remove a peer
+Host departure terminates room and notifies remaining client
+Expired account token is refused

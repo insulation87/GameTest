@@ -1,0 +1,49 @@
+PASS
+Actual Login scene and login UI initialize
+Actual guest button enters guest mode without account authentication
+Actual MainMenu survives the login transition
+Guest saves are isolated from account and legacy progress
+Guest cannot query or invite cloud friends
+MainMenu disables friends for guests
+Guest is refused Internet hosting at session API
+Guest is refused Internet joining at session API
+LAN policy rejects public Internet IPs and accepts loopback
+Actual menu produces a visible offscreen UI capture
+Actual Map1 starts in local two-player mode
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+Both local actors receive independent half-screen viewports
+Actual cameras present the two separate viewports
+Gamepad moves only the second player on outdoor terrain
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Both players contribute to the shared region 1 objective
+Second-player portal travel does not move player one
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Both players contribute to the shared region 2 objective
+Second-player portal travel does not move player one
+Both split-screen players reach safe ancient forest ground
+Gameplay camera produces a live render target
+Offscreen gameplay rendering fills the camera target with visible scene content
+Gameplay camera produces a live render target
+Offscreen gameplay rendering fills the camera target with visible scene content
+Only the primary actor owns the separate cooperative save; single-player slot is unchanged
+No unexpected Unity gameplay errors: 

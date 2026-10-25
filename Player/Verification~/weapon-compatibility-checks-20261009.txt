@@ -1,0 +1,154 @@
+﻿PASS Ten unique character weapons
+PASS Correct initial weapon with either Awake order: breaker
+PASS Held model exists: breaker
+PASS Levels increase actual weapon damage: breaker
+PASS Quality increases actual weapon damage: breaker
+PASS Correct initial weapon with either Awake order: sentinel
+PASS Held model exists: sentinel
+PASS Levels increase actual weapon damage: sentinel
+PASS Quality increases actual weapon damage: sentinel
+PASS Correct initial weapon with either Awake order: gunner
+PASS Held model exists: gunner
+PASS Levels increase actual weapon damage: gunner
+PASS Quality increases actual weapon damage: gunner
+PASS Correct initial weapon with either Awake order: medic
+PASS Held model exists: medic
+PASS Levels increase actual weapon damage: medic
+PASS Quality increases actual weapon damage: medic
+PASS Correct initial weapon with either Awake order: assassin
+PASS Held model exists: assassin
+PASS Levels increase actual weapon damage: assassin
+PASS Quality increases actual weapon damage: assassin
+PASS Correct initial weapon with either Awake order: pyromancer
+PASS Held model exists: pyromancer
+PASS Levels increase actual weapon damage: pyromancer
+PASS Quality increases actual weapon damage: pyromancer
+PASS Correct initial weapon with either Awake order: engineer
+PASS Held model exists: engineer
+PASS Levels increase actual weapon damage: engineer
+PASS Quality increases actual weapon damage: engineer
+PASS Correct initial weapon with either Awake order: frost
+PASS Held model exists: frost
+PASS Levels increase actual weapon damage: frost
+PASS Quality increases actual weapon damage: frost
+PASS Correct initial weapon with either Awake order: reaper
+PASS Held model exists: reaper
+PASS Levels increase actual weapon damage: reaper
+PASS Quality increases actual weapon damage: reaper
+PASS Correct initial weapon with either Awake order: ranger
+PASS Held model exists: ranger
+PASS Levels increase actual weapon damage: ranger
+PASS Quality increases actual weapon damage: ranger
+PASS Random loot covers exactly ten character weapons
+PASS Real attack damages an NPC: WarHammer
+PASS Attack excludes targets behind the camera: WarHammer
+PASS Melee creates no bullets: WarHammer
+PASS Wrong character deals exactly ten percent actual hit damage: WarHammer
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: WarHammer
+PASS Backpack explains the current role penalty: WarHammer
+PASS Returning to the matching character restores full hit damage without cumulative penalties: WarHammer
+PASS Real attack damages an NPC: SwordShield
+PASS Attack excludes targets behind the camera: SwordShield
+PASS Melee creates no bullets: SwordShield
+PASS Wrong character deals exactly ten percent actual hit damage: SwordShield
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: SwordShield
+PASS Backpack explains the current role penalty: SwordShield
+PASS Returning to the matching character restores full hit damage without cumulative penalties: SwordShield
+PASS Real attack damages an NPC: RepeatingCrossbow
+PASS Attack excludes targets behind the camera: RepeatingCrossbow
+PASS Wrong character deals exactly ten percent actual hit damage: RepeatingCrossbow
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: RepeatingCrossbow
+PASS Backpack explains the current role penalty: RepeatingCrossbow
+PASS Returning to the matching character restores full hit damage without cumulative penalties: RepeatingCrossbow
+PASS Real attack damages an NPC: LightStaff
+PASS Attack excludes targets behind the camera: LightStaff
+PASS Wrong character deals exactly ten percent actual hit damage: LightStaff
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: LightStaff
+PASS Backpack explains the current role penalty: LightStaff
+PASS Returning to the matching character restores full hit damage without cumulative penalties: LightStaff
+PASS Real attack damages an NPC: DualDaggers
+PASS Attack excludes targets behind the camera: DualDaggers
+PASS Melee creates no bullets: DualDaggers
+PASS Wrong character deals exactly ten percent actual hit damage: DualDaggers
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: DualDaggers
+PASS Backpack explains the current role penalty: DualDaggers
+PASS Returning to the matching character restores full hit damage without cumulative penalties: DualDaggers
+PASS Real attack damages an NPC: FireStaff
+PASS Attack excludes targets behind the camera: FireStaff
+PASS Matching fire staff hits a secondary target inside its full explosion radius
+PASS Wrong character deals exactly ten percent actual hit damage: FireStaff
+PASS Wrong character's reduced explosion radius excludes the secondary target
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: FireStaff
+PASS Backpack explains the current role penalty: FireStaff
+PASS Returning to the matching character restores full hit damage without cumulative penalties: FireStaff
+PASS Real attack damages an NPC: ArcaneFocus
+PASS Attack excludes targets behind the camera: ArcaneFocus
+PASS Wrong character deals exactly ten percent actual hit damage: ArcaneFocus
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: ArcaneFocus
+PASS Backpack explains the current role penalty: ArcaneFocus
+PASS Returning to the matching character restores full hit damage without cumulative penalties: ArcaneFocus
+PASS Real attack damages an NPC: FrostStaff
+PASS Attack excludes targets behind the camera: FrostStaff
+PASS Wrong character deals exactly ten percent actual hit damage: FrostStaff
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: FrostStaff
+PASS Backpack explains the current role penalty: FrostStaff
+PASS Returning to the matching character restores full hit damage without cumulative penalties: FrostStaff
+PASS Real attack damages an NPC: Scythe
+PASS Attack excludes targets behind the camera: Scythe
+PASS Melee creates no bullets: Scythe
+PASS Wrong character deals exactly ten percent actual hit damage: Scythe
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: Scythe
+PASS Backpack explains the current role penalty: Scythe
+PASS Returning to the matching character restores full hit damage without cumulative penalties: Scythe
+PASS Real attack damages an NPC: Longbow
+PASS Attack excludes targets behind the camera: Longbow
+PASS Wrong character deals exactly ten percent actual hit damage: Longbow
+PASS Restored inventory applies the penalty without changing the weapon's saved base stats: Longbow
+PASS Backpack explains the current role penalty: Longbow
+PASS Returning to the matching character restores full hit damage without cumulative penalties: Longbow
+PASS Melee cannot hit beyond reach
+PASS Melee cannot attack through a wall
+PASS NPC death drops both weapon and armor through the real death path
+PASS Dropped items enter the backpack
+PASS Third-floor weapon has level 81–100
+PASS Armor follows the floor level range
+PASS Backpack buttons equip dropped weapons
+PASS Real armor pickup: Helmet
+PASS Backpack equips the correct armor slot: Helmet
+PASS Real armor pickup: Chest
+PASS Backpack equips the correct armor slot: Chest
+PASS Real armor pickup: Pants
+PASS Backpack equips the correct armor slot: Pants
+PASS Real armor pickup: Shoes
+PASS Backpack equips the correct armor slot: Shoes
+PASS Four armor bonuses add together without restoring damaged armor
+PASS Replacement removes the old bonus and retains the old item
+PASS Repeated equip and unequip cannot heal or stack bonuses
+PASS Equipped armor cannot be sold
+PASS Backpack buttons unequip then sell armor
+PASS Full backpack rejects weapons and armor without deleting drops
+PASS Equipment is written to an isolated save: 
+PASS Equipment save passes validation: 
+PASS Reload restores weapons, all armor slots and bonuses exactly once
+PASS Non-finite equipment stats are rejected
+PASS Legacy guns and single armor migrate without losing levels
+PASS Armor is physically collected by the pickup magnet in Play Mode
+PASS Shop button buys a character weapon: WarHammer
+PASS Shop button buys a character weapon: SwordShield
+PASS Shop button buys a character weapon: RepeatingCrossbow
+PASS Shop button buys a character weapon: LightStaff
+PASS Shop button buys a character weapon: DualDaggers
+PASS Shop button buys a character weapon: FireStaff
+PASS Shop button buys a character weapon: ArcaneFocus
+PASS Shop button buys a character weapon: FrostStaff
+PASS Shop button buys a character weapon: Scythe
+PASS Shop button buys a character weapon: Longbow
+PASS Shop button buys armor for the backpack: Helmet
+PASS Shop button buys armor for the backpack: Chest
+PASS Shop button buys armor for the backpack: Pants
+PASS Shop button buys armor for the backpack: Shoes
+PASS Character selection displays corresponding weapon names
+PASS Selected weapon details fit the panel
+PASS Inventory and hotbar use mesh icons
+PASS Review does not write automatic or player saves
+PASS No unexpected gameplay errors: 

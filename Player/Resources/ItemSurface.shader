@@ -22,8 +22,8 @@ Shader "GameTest/ItemSurface"
             fixed4 frag(Output i):SV_Target
             {
                 float light = dot(normalize(i.normal),normalize(float3(-.4,.8,-.5)));
-                float shade = .68 + .32 * smoothstep(-.3,.8,light);
-                return fixed4(i.color.rgb*shade,1);
+                float shade = light > .55 ? 1.0 : light > -.1 ? .80 : .60;
+                return fixed4(floor(saturate(i.color.rgb*shade)*15+.5)/15,1);
             }
             ENDCG
         }

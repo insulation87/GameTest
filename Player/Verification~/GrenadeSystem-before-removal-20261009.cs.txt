@@ -1,0 +1,361 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+[RequireComponent(typeof(WeaponInventory))]
+public class GrenadeThrower : MonoBehaviour
+{
+    [Header("Throw")]
+    [Min(1f)] public float throwSpeed = 16f;
+    [Min(0.1f)] public float fuseDuration = 5f;
+    [Min(4)] public int trajectoryPoints = 35;
+    [Min(0.01f)] public float trajectoryStep = 0.08f;
+
+    [Header("Explosion")]
+    [Min(0f)] public float explosionDamage = 100f;
+    [Min(0.1f)] public float explosionRadius = 6f;
+
+    public bool IsEquipped { get; private set; }
+
+    private WeaponInventory inventory;
+    private PlayerShooter shooter;
+    private PlayerHealth playerHealth;
+    private LineRenderer trajectory;
+    private GameObject heldVisual;
+    private bool aiming;
+    private float fuseStartedAt;
+    private float nextFuseSound;
+
+    void Awake()
+    {
+        inventory = GetComponent<WeaponInventory>();
+        shooter = GetComponent<PlayerShooter>();
+        playerHealth = GetComponent<PlayerHealth>();
+        BuildTrajectoryLine();
+    }
+
+    public void SetEquipped(bool equipped)
+    {
+        // A cloned inventory may equip a weapon before this component's Awake runs.
+        if (trajectory == null) BuildTrajectoryLine();
+        if (aiming && !equipped)
+            return;
+
+        IsEquipped = equipped;
+        if (shooter != null)
+            shooter.SetGrenadeMode(equipped);
+
+        if (equipped)
+            CreateHeldVisual();
+        else
+            DestroyHeldVisual();
+
+        trajectory.enabled = false;
+    }
+
+    void Update()
+    {
+        if (!CoopSession.Simulates(this)) return;
+        if (!IsEquipped || Time.timeScale <= 0f || (playerHealth != null && playerHealth.IsDead) ||
+            (inventory != null && (inventory.IsOpen || inventory.IsPaused)))
+            return;
+
+        if (!aiming && CoopInput.FireDown(this))
+            BeginAim();
+
+        if (!aiming)
+            return;
+
+        UpdateHeldVisual();
+        DrawTrajectory();
+
+        float elapsed = Time.time - fuseStartedAt;
+        if (Time.time >= nextFuseSound)
+        {
+            nextFuseSound = Time.time + Mathf.Lerp(.12f, .8f, Mathf.Clamp01((fuseDuration - elapsed) / fuseDuration));
+            GameAudio.Local(GameSound.Fuse);
+        }
+        if (elapsed >= fuseDuration)
+        {
+            ExplodeInHand();
+            return;
+        }
+
+        if (CoopInput.FireUp(this))
+            ThrowGrenade(fuseDuration - elapsed);
+    }
+
+    void BeginAim()
+    {
+        if (inventory == null || !inventory.ConsumeGrenade())
+        {
+            SetEquipped(false);
+            return;
+        }
+
+        aiming = true;
+        GameAudio.Local(GameSound.GrenadePin);
+        fuseStartedAt = Time.time;
+        nextFuseSound = Time.time + .5f;
+        trajectory.enabled = true;
+    }
+
+    void ThrowGrenade(float remainingFuse)
+    {
+        GameAudio.Local(GameSound.GrenadeThrow);
+        GetThrowData(out Vector3 origin, out Vector3 velocity);
+        ThrownGrenade.Create(
+            origin,
+            velocity,
+            Mathf.Max(0.01f, remainingFuse),
+            explosionDamage,
+            explosionRadius,
+            playerHealth,
+            gameObject
+        );
+        FinishThrow();
+    }
+
+    void ExplodeInHand()
+    {
+        GetThrowData(out Vector3 origin, out _);
+        GrenadeExplosion.Explode(origin, explosionDamage, explosionRadius, playerHealth);
+        FinishThrow();
+    }
+
+    void FinishThrow()
+    {
+        aiming = false;
+        trajectory.enabled = false;
+        SetEquipped(false);
+    }
+
+    void GetThrowData(out Vector3 origin, out Vector3 velocity)
+    {
+        Camera camera = GetActiveCamera();
+        Vector3 forward = camera != null ? camera.transform.forward : transform.forward;
+        origin = camera != null
+            ? camera.transform.position + forward * 1.1f - camera.transform.up * 0.2f
+            : transform.position + Vector3.up * 1.2f + forward;
+        velocity = forward.normalized * throwSpeed + Vector3.up * 2f;
+    }
+
+    Camera GetActiveCamera()
+    {
+        if (shooter != null && shooter.fpsCamera != null && shooter.fpsCamera.gameObject.activeInHierarchy)
+            return shooter.fpsCamera;
+        if (shooter != null && shooter.tpsCamera != null && shooter.tpsCamera.gameObject.activeInHierarchy)
+            return shooter.tpsCamera;
+        return Camera.main;
+    }
+
+    void DrawTrajectory()
+    {
+        GetThrowData(out Vector3 origin, out Vector3 velocity);
+        trajectory.positionCount = trajectoryPoints;
+        Vector3 previous = origin;
+        int usedPoints = trajectoryPoints;
+
+        for (int pointIndex = 0; pointIndex < trajectoryPoints; pointIndex++)
+        {
+            float time = pointIndex * trajectoryStep;
+            Vector3 point = origin + velocity * time + Physics.gravity * (0.5f * time * time);
+            trajectory.SetPosition(pointIndex, point);
+
+            if (pointIndex > 0)
+            {
+                Vector3 segment = point - previous;
+                if (Physics.Raycast(previous, segment.normalized, out RaycastHit hit,
+                    segment.magnitude, ~0, QueryTriggerInteraction.Ignore) &&
+                    !hit.transform.IsChildOf(transform))
+                {
+                    trajectory.SetPosition(pointIndex, hit.point);
+                    usedPoints = pointIndex + 1;
+                    break;
+                }
+            }
+            previous = point;
+        }
+
+        trajectory.positionCount = usedPoints;
+    }
+
+    void BuildTrajectoryLine()
+    {
+        trajectory = GetComponent<LineRenderer>();
+        if (trajectory == null) trajectory = gameObject.AddComponent<LineRenderer>();
+        trajectory.enabled = false;
+        trajectory.useWorldSpace = true;
+        trajectory.startWidth = 0.07f;
+        trajectory.endWidth = 0.025f;
+        trajectory.startColor = new Color(0.2f, 1f, 0.3f, 0.9f);
+        trajectory.endColor = new Color(1f, 0.85f, 0.1f, 0.5f);
+        Shader shader = Shader.Find("Sprites/Default");
+        if (shader != null)
+            trajectory.material = new Material(shader);
+    }
+
+    void CreateHeldVisual()
+    {
+        if (heldVisual != null)
+            return;
+        heldVisual = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        heldVisual.name = "Held Grenade";
+        PixelCharacterFactory.StyleGrenade(heldVisual);
+        heldVisual.transform.localScale = Vector3.one * 0.28f;
+        Destroy(heldVisual.GetComponent<Collider>());
+        Renderer renderer = heldVisual.GetComponent<Renderer>();
+        if (renderer != null)
+            renderer.material.color = new Color(0.18f, 0.32f, 0.12f, 1f);
+        UpdateHeldVisual();
+    }
+
+    void UpdateHeldVisual()
+    {
+        if (heldVisual == null)
+            return;
+        Camera camera = GetActiveCamera();
+        if (camera != null)
+            heldVisual.transform.position = camera.transform.position +
+                camera.transform.forward * 0.65f - camera.transform.up * 0.35f + camera.transform.right * 0.3f;
+    }
+
+    void DestroyHeldVisual()
+    {
+        if (heldVisual != null)
+            Destroy(heldVisual);
+        heldVisual = null;
+    }
+}
+
+public class GrenadePickup : MonoBehaviour, IMagneticPickup
+{
+    private bool collected;
+
+    public static void Create(Vector3 position, float lifetime)
+    {
+        GameObject pickup = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        pickup.name = "Grenade Pickup";
+        PixelCharacterFactory.StyleGrenade(pickup);
+        pickup.transform.position = position;
+        pickup.transform.localScale = Vector3.one * 0.35f;
+        pickup.GetComponent<Collider>().isTrigger = true;
+        Renderer renderer = pickup.GetComponent<Renderer>();
+        if (renderer != null)
+            renderer.material.color = new Color(0.18f, 0.38f, 0.12f, 1f);
+        Rigidbody body = pickup.AddComponent<Rigidbody>();
+        body.isKinematic = true;
+        body.useGravity = false;
+        pickup.AddComponent<GrenadePickup>();
+        Destroy(pickup, lifetime);
+    }
+
+    void OnTriggerEnter(Collider other)
+    {
+        TryCollect(other);
+    }
+
+    public bool CanCollect(WeaponInventory inventory) => !collected && inventory != null;
+
+    public bool TryCollect(Collider other)
+    {
+        if (collected || other == null)
+            return false;
+        WeaponInventory inventory = other.GetComponentInParent<WeaponInventory>();
+        PlayerHealth player = other.GetComponentInParent<PlayerHealth>();
+        if (inventory == null || player == null || player.IsDead)
+            return false;
+        collected = true;
+        inventory.AddGrenade();
+        Destroy(gameObject);
+        return true;
+    }
+}
+
+public class ThrownGrenade : MonoBehaviour
+{
+    private float nextBounceSound;
+    private float detonationTime, nextFuseSound;
+    private float damage;
+    private float radius;
+    private PlayerHealth ownerHealth;
+
+    public static void Create(Vector3 position, Vector3 velocity, float fuse, float damage,
+        float radius, PlayerHealth ownerHealth, GameObject owner)
+    {
+        GameObject grenade = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        grenade.name = "Thrown Grenade";
+        PixelCharacterFactory.StyleGrenade(grenade);
+        grenade.transform.position = position;
+        grenade.transform.localScale = Vector3.one * 0.3f;
+        Renderer renderer = grenade.GetComponent<Renderer>();
+        if (renderer != null)
+            renderer.material.color = new Color(0.16f, 0.3f, 0.1f, 1f);
+        Rigidbody body = grenade.AddComponent<Rigidbody>();
+        body.mass = 0.4f;
+        body.collisionDetectionMode = CollisionDetectionMode.ContinuousDynamic;
+        body.linearVelocity = velocity;
+        foreach (Collider ownerCollider in owner.GetComponentsInChildren<Collider>())
+            Physics.IgnoreCollision(grenade.GetComponent<Collider>(), ownerCollider);
+        ThrownGrenade component = grenade.AddComponent<ThrownGrenade>();
+        component.damage = damage;
+        component.radius = radius;
+        component.ownerHealth = ownerHealth;
+        component.detonationTime = Time.time + fuse;
+        component.nextFuseSound = Time.time + .1f;
+        component.Invoke(nameof(Detonate), fuse);
+    }
+
+    void Detonate()
+    {
+        GrenadeExplosion.Explode(transform.position, damage, radius, ownerHealth);
+        Destroy(gameObject);
+    }
+
+    void Update()
+    {
+        if (Time.timeScale <= 0f || Time.time < nextFuseSound) return;
+        nextFuseSound = Time.time + Mathf.Lerp(.12f, .8f, Mathf.Clamp01((detonationTime - Time.time) / 5f));
+        GameAudio.At(GameSound.Fuse, transform.position);
+    }
+
+    void OnCollisionEnter(Collision collision)
+    {
+        if (Time.time >= nextBounceSound && collision.relativeVelocity.sqrMagnitude > .5f)
+        {
+            nextBounceSound = Time.time + .12f;
+            GameAudio.At(GameSound.GrenadeBounce, transform.position);
+        }
+    }
+}
+
+public static class GrenadeExplosion
+{
+    public static void Explode(Vector3 center, float damage, float radius, PlayerHealth source)
+    {
+        GameAudio.At(GameSound.Explosion, center);
+        HashSet<EnemyHealth> enemies = new HashSet<EnemyHealth>();
+        HashSet<PlayerHealth> players = new HashSet<PlayerHealth>();
+        HashSet<TreasureChest> chests = new HashSet<TreasureChest>();
+        foreach (Collider hit in Physics.OverlapSphere(center, radius, ~0, QueryTriggerInteraction.Ignore))
+        {
+            TreasureChest chest = hit.GetComponentInParent<TreasureChest>();
+            if (chest != null && chests.Add(chest)) chest.TakeDamage(damage, source);
+            EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
+            if (enemy != null && enemies.Add(enemy))
+                enemy.TakeDamage(damage, source);
+            PlayerHealth player = hit.GetComponentInParent<PlayerHealth>();
+            if (player != null && players.Add(player))
+                player.TakeDamage(damage);
+        }
+
+        GameObject flash = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+        flash.name = "Grenade Explosion";
+        flash.transform.position = center;
+        flash.transform.localScale = Vector3.one * radius * 2f;
+        Object.Destroy(flash.GetComponent<Collider>());
+        Renderer renderer = flash.GetComponent<Renderer>();
+        if (renderer != null)
+            renderer.material.color = new Color(1f, 0.35f, 0.03f, 0.55f);
+        Object.Destroy(flash, 0.12f);
+    }
+}

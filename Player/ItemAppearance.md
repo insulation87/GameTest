@@ -1,16 +1,20 @@
-# Equipment appearance
+﻿# Equipment appearance
+
+Equipment now uses a 0.0125-unit block grid, square panels and faceted geometry,
+with a limited-color, three-tone shader. Inventory projections snap to a pixel grid.
+Held weapons always use this set, including scenes saved with the old FBX option.
 
 The default equipment set is generated locally from mesh geometry. No downloads,
 scene edits, prefab assignments or Editor-only asset lookups are required.
 
-- Rifle: steel receiver, vented handguard, magazine and shoulder stock.
-- SMG: short teal receiver, compact stock and straight magazine.
-- Shotgun: wood furniture, ribbed pump, twin tubes and spare shells.
-- RPG: olive launch tube, flared rear, warhead and raised sight.
-- Pistol: silver slide, short barrel and textured grip.
-- Sniper rifle: long barrel, scope with blue lenses and bipod.
-- Light machine gun: box magazine, ammunition belt, carry handle and bipod.
+- Ten character weapons: war hammer, sword and shield, repeating crossbow, light staff,
+  paired daggers, fire staff, arcane focus, frost staff, scythe and longbow.
+- Four armor silhouettes: helmet, chest armor, pants and shoes.
 - Health pack: red case, white medical panels, latches and handle.
+- Treasure chest and fragments retain their existing mesh definitions.
+
+Legacy gun mesh IDs resolve to character weapons for save compatibility.
+See [Character equipment](CharacterEquipment.md) for roles, attacks, levels and backpack controls.
 
 `ItemAppearance.cs` supplies shared, cached meshes for held weapons and loot.
 `Resources/ItemSurface.shader` provides a packaged, vertex-colored surface for
@@ -20,7 +24,7 @@ without creating cameras or render textures during gameplay.
 
 `PlayerShooter` enables the new appearance by default. The existing Weapon Model
 Position, Rotation and Scale settings still control the first-person placement.
-Disable Use New Weapon Appearance to use the previously assigned held models.
+The legacy Use New Weapon Appearance field is migrated to the pixel set when equipping.
 Loot and inventory continue to use the new equipment set.
 
 Health pickup physics, inventory stacking and right-click healing are retained.

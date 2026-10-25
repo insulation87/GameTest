@@ -1,0 +1,18 @@
+PASS
+Built real NavMesh for the NPC movement and attack loop
+NPC is active on the real NavMesh in Play Mode
+Actual NPC appearance initialized
+Level 9 at range does not shoot or damage the player
+Level 10 fires an actual crossbow projectile at range
+Level 10 projectile hits and deducts the correct health exactly once
+Level 11 fires an actual crossbow projectile at range
+Level 11 projectile hits and deducts the correct health exactly once
+Level 10 switches to melee at close range and applies the correct damage (attacks=1, ranged=False, bolt=False, health=97.2, distance=1.2)
+Level 9 still performs melee attacks
+An occluding wall prevents the level 10 NPC from shooting
+Removing the wall allows shooting and projectile damage again
+A target outside the 12-unit ranged limit is not shot
+A bolt exists before the thin-wall collision check
+An in-flight bolt hits a thin wall without damaging the player
+Changing the NPC from level 9 to 10 during Play Mode unlocks shooting immediately
+No gameplay runtime errors during the combat scenarios

@@ -1,0 +1,4 @@
+System.Exception: Selected weapon details fit the panel at the actual rendered font size (5px, 27.0/240.0)
+  at CharacterEquipmentReview.Check (System.Boolean condition, System.String message) [0x00026] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\Player\Editor\CharacterEquipmentReview.cs:67 
+  at CharacterEquipmentReview+<Checks>d__26.MoveNext () [0x01b7e] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\Player\Editor\CharacterEquipmentReview.cs:299 
+  at CharacterEquipmentReview.Tick () [0x0000e] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\Player\Editor\CharacterEquipmentReview.cs:52 

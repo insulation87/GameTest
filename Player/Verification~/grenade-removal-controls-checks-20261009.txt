@@ -1,0 +1,37 @@
+﻿PASS The isolated controls review enters guest mode before starting cooperative gameplay
+PASS Existing settings without bindings receive both keyboard defaults
+PASS Old grenade bindings are cleared in both keyboard profiles and gamepad settings
+PASS Removing action 18 preserves custom skills and all three medical-pack bindings
+PASS Removed action cannot appear in the action list or be rebound
+PASS The retired grenade key is free for another action
+PASS Real G key input generates no grenade network bit
+PASS Editing a cloned draft cannot mutate live controls
+PASS Actual control settings UI has no grenade action
+PASS Recording a binding blocks gameplay input
+PASS A real Input System key press completes UI capture
+PASS Captured controls remain a draft until applied
+PASS Cancel discards the binding and leaves saved settings unchanged
+PASS Applied bindings survive save and reload
+PASS The original skill key no longer triggers the action
+PASS The rebound skill key reaches single-player gameplay
+PASS Same-context conflicts exchange both bindings
+PASS Shared-keyboard conflicts keep capture open without changing the draft
+PASS Escape cancels capture without closing settings
+PASS Rebound mouse input drives shooting press edges
+PASS Rebound mouse release drives shooting release edges
+PASS Old mouse fire input does not trigger the rebound action
+PASS The second keyboard profile changes independently from player one
+PASS A real gamepad press completes the selected gamepad binding
+PASS The second gamepad profile reaches co-op input frames
+PASS The old gamepad skill button no longer casts
+PASS Invalid stored keys recover to playable defaults
+PASS Corrupt stored JSON recovers without breaking startup
+PASS Restore defaults resets bindings in the settings draft
+PASS All binding rows are reachable in a scrollable list
+PASS Visible binding buttons are reachable by the UI raycaster
+PASS Binding instructions fit the settings page
+PASS A split-screen run starts with custom bindings
+PASS Rebound movement moves the real split-screen player
+PASS Rebound player-two skill casts only that character's skill
+PASS Character hints resolve the actor's own binding profile
+PASS No unexpected Unity gameplay errors: 

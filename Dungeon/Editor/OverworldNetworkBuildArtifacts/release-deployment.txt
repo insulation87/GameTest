@@ -1,0 +1,3 @@
+Path: D:\GameTest3\GameTest\Builds\Windows64-20261008\GameTest.exe
+Copied files: 190
+Every copied file matches the built artifact by SHA-256.

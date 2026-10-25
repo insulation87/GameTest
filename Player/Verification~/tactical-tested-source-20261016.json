@@ -1,0 +1,122 @@
+﻿[
+    {
+        "File":  "Player\\RogueTactics.cs",
+        "SHA256":  "49D82A21E7DE23052D70F16560807958B4C8BE92865A862BDFEA0A851FB6D36D"
+    },
+    {
+        "File":  "Player\\Projectile.cs",
+        "SHA256":  "5ABC27FA0F2AE827001828DD5EED22DD85C2E1D9380F0124AE4BD944FFFF8DF2"
+    },
+    {
+        "File":  "Player\\WeaponBuildSystem.cs",
+        "SHA256":  "A0919D0B5E7B55214DF94BC3DDF2CFCA3E582CA717F1FB3B2969BDBCFF76D9D9"
+    },
+    {
+        "File":  "Player\\PlayerShooter.cs",
+        "SHA256":  "7138076D5304A0489B89F8EE39D145EBABA71655AA885C13653D348B9EE7AF4C"
+    },
+    {
+        "File":  "Player\\PlayerHealth.cs",
+        "SHA256":  "BFDFD3BB51277F82DAA6890FF308D97B1F2143B1F6D93FC6FACFBAE3CA7BEB56"
+    },
+    {
+        "File":  "Player\\Player.cs",
+        "SHA256":  "07C8B664B2A08AD1DBD9AAF5F33BE4242A6E3A9BB9321DA5BD0EFAE2E77955CB"
+    },
+    {
+        "File":  "Player\\GameProgressState.cs",
+        "SHA256":  "EC09B5285A6E8153A5C06685C9B36ED143F4E81CAB14140455856D7140ACCCCF"
+    },
+    {
+        "File":  "Player\\GameProgressSave.cs",
+        "SHA256":  "48EBC5E5528C8774469F2A3220851E089FCBF10665A0463CCCD484FCF7413319"
+    },
+    {
+        "File":  "Player\\ArmorEquipment.cs",
+        "SHA256":  "5C145E2CAEF57412C6E85FD0AC0400F419F17354D0D340AC259C21A9907480CE"
+    },
+    {
+        "File":  "Player\\CombatMomentum.cs",
+        "SHA256":  "FDD6220931B43471D3E52059E5E5811EBC335DDADDADAB1A310790B44056BCE9"
+    },
+    {
+        "File":  "Player\\CharacterSkills.cs",
+        "SHA256":  "4F59F4312BC5680404166F3D5711C8F17B5F2E5B7860A9D0AFBB94CB1CAFD590"
+    },
+    {
+        "File":  "Player\\CharacterRoster.cs",
+        "SHA256":  "ECD8EDD9408D42466A7394732427AA14EE7C69C65C706C7736C6526E80FD400F"
+    },
+    {
+        "File":  "Dungeon\\BossController.cs",
+        "SHA256":  "5B55CB33E52495B82D191BE8254F05F3F99E4C49EB7E49787B40A8E55A52F531"
+    },
+    {
+        "File":  "Dungeon\\BossSpawner.cs",
+        "SHA256":  "014C9FEFF141A685DFED61CCA8D6570290C3BA684645571856EF068D6CF30BF3"
+    },
+    {
+        "File":  "Dungeon\\OverworldProgression.cs",
+        "SHA256":  "E68AD1022A6B70092982D974F410C132248179A476C6BC32FE1BDECC741891FB"
+    },
+    {
+        "File":  "NPC\\EnemyHealth.cs",
+        "SHA256":  "78D9CCFE40A4AD6FCF01B91DBEB2E1530735AB5AB0E43FEBACECE8DB709F422A"
+    },
+    {
+        "File":  "Multiplayer\\CoopProtocol.cs",
+        "SHA256":  "257111C468B1BD38488F8459A3ECA52B8539AC28E7FFEE047CEC8D593A79BF1D"
+    },
+    {
+        "File":  "Multiplayer\\CoopGameplayState.cs",
+        "SHA256":  "FF3DB595AE1D15F16A359243D8D1AB16328E25422C6AF2F07C8EB5CBBDE51C69"
+    },
+    {
+        "File":  "Multiplayer\\CoopSession.cs",
+        "SHA256":  "88192BC1A42DD614D59F4E6EE8603A0A2D84188549E639A5D49FF0E43C5E2311"
+    },
+    {
+        "File":  "Multiplayer\\CoopWorldMirror.cs",
+        "SHA256":  "1993BCAA2FEEEDCC6B2E0A3030D9D6D3BCB3931E23DC82C032DE8F8755F547A5"
+    },
+    {
+        "File":  "UI\\WeaponBuildGuideUI.cs",
+        "SHA256":  "8AFA4DB7447D18107159C6DD30F9C96A952BA9C165FE23C2139206F1BAC71625"
+    },
+    {
+        "File":  "Player\\TacticalMarker.cs",
+        "SHA256":  "12F14287EB8A3C28E366865FD5A103F77EE74D5575A867D279A8BAF7622665B0"
+    },
+    {
+        "File":  "Player\\WeaponComboStatus.cs",
+        "SHA256":  "F28160ED876A6C0E930D0685E415A7091A8B1E551B3136886A3D30AF43A6ACBB"
+    },
+    {
+        "File":  "Player\\TacticalField.cs",
+        "SHA256":  "19922C097C6D18A421DBBE4FA64696CFA17E4F7AE85EE21DEFF51316E4D5482E"
+    },
+    {
+        "File":  "Player\\TacticalEquipment.cs",
+        "SHA256":  "79B256748CE1D9B03609451AD6F7B08C06D8483AC632A66FE6A321CEBF0C8A70"
+    },
+    {
+        "File":  "NPC\\CombatContributions.cs",
+        "SHA256":  "ADA0D41189D3D32655D65D23746C6523CBCD41DA8715EA63F25C79CAA9BD3498"
+    },
+    {
+        "File":  "Dungeon\\TacticalBossMechanics.cs",
+        "SHA256":  "A585F37FC011DE883A2643FA1E0A526C611D1E58E4D79841A69554BC4C74B69F"
+    },
+    {
+        "File":  "Dungeon\\TacticalExpedition.cs",
+        "SHA256":  "FFED55C4199C0446B2C89F4316DAEC0D45480C5E2B141C458E899DD83DB742AA"
+    },
+    {
+        "File":  "Dungeon\\TacticalAltarHazard.cs",
+        "SHA256":  "70BF8F85DC7EE1FC6F93785ECDB684D18918057AE830F15F41FAF8E737FEDC76"
+    },
+    {
+        "File":  "Multiplayer\\TacticalNetworkVisuals.cs",
+        "SHA256":  "70E881FA9064F902B89FC1B7DD97185F64144ED457423EAE789F666D295C72CB"
+    }
+]

@@ -1,0 +1,16 @@
+﻿{
+    "Result":  "PASS",
+    "Export":  "D:\\GameTest3\\GameTest\\Builds\\Windows64-20261009",
+    "Archive":  "D:\\GameTest3\\GameTest\\Builds\\GameTest-Windows64-20261009.zip",
+    "ArchiveSHA256":  "7B06260DC612DB1B1CC4AF995D1281BD512603F92112DBF904A26BE06CE3479C",
+    "ArchiveBytes":  98383551,
+    "RuntimeFiles":  190,
+    "RuntimeBytes":  261531544,
+    "StartupPID":  3536,
+    "StartupExecutable":  "C:\\Users\\User\\AppData\\Local\\Temp\\GameTest-UnzipReview-d11825fab7404ee09364dc96ea66f76a\\GameTest\\GameTest.exe",
+    "StartupLog":  "D:\\GameTest3\\GameTest\\Assets\\Script\\NPC\\Verification~\\export-startup-20261009.log",
+    "StartupStartedUTC":  "2026-10-09T02:32:44.0908871Z",
+    "ReleaseInstrumentationExcluded":  true,
+    "StartupSeconds":  72.2,
+    "StartupResult":  "Exact ZIP extraction started normally with D3D11; no logged exceptions, missing scripts, or startup errors."
+}

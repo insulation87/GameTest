@@ -1,0 +1,122 @@
+PASS 115 Play Mode checks
+TradingHub is included in enabled build scenes
+Guest mode enters the actual login/menu flow without network requests
+Every gameplay save uses a separate review product directory
+UI button is available: 旅人營地
+UI raycasts reach the intended button: 旅人營地 (hit 旅人營地 · NPC 交易)
+A first visit opens the existing character selection UI
+UI button is available: 以此角色出發
+UI raycasts reach the intended button: 以此角色出發 (hit 以此角色出發)
+A new ranger reaches camp with zero gold and a resumable preparation checkpoint
+The camp contains no combat player, enemy AI, or map autosave writer
+WASD input moves the visitor through the running CharacterController ((0.00, 0.08, -8.00) -> (1.97, 0.08, -8.00), timeScale 1)
+Merchant/portal interactions are unavailable outside interaction range
+F opens the nearby weapon merchant's shop
+UI button is available: 震地戰錘
+UI raycasts reach the intended button: 震地戰錘 (hit 震地戰錘)
+A new visitor cannot purchase without gold or modify the preparation checkpoint
+UI button is available: 結束交易
+UI raycasts reach the intended button: 結束交易 (hit 結束交易)
+Approaching the portal opens a confirmation and does not auto-enter gameplay
+UI button is available: 繼續留在營地
+UI raycasts reach the intended button: 繼續留在營地 (hit 繼續留在營地)
+UI button is available: 進入遊戲
+UI raycasts reach the intended button: 進入遊戲 (hit 進入遊戲)
+The portal preserves the selected character into actual Map1 gameplay
+Actual Map1 gameplay saves a funded inventory on safe ground
+Gameplay returns to the main menu
+UI button is available: 旅人營地
+UI raycasts reach the intended button: 旅人營地 (hit 旅人營地 · NPC 交易)
+Revisiting the camp loads the existing single-player wallet
+UI button is available: 星矢長弓
+UI raycasts reach the intended button: 星矢長弓 (hit 星矢長弓)
+The weapon merchant debits the exact price and grants one weapon
+One successful purchase advances persistent shop progress but keeps the two-purchase weapon locked
+Locked weapons cannot be purchased through the transaction API or advance the unlock counter
+UI button is available: 震地戰錘
+UI raycasts reach the intended button: 震地戰錘 (hit 震地戰錘)
+The second purchase immediately unlocks the next weapon in the actual shop UI
+UI button is available: 晨光法杖
+UI raycasts reach the intended button: 晨光法杖 (hit 晨光法杖)
+UI button is available: 結束交易
+UI raycasts reach the intended button: 結束交易 (hit 結束交易)
+UI button is available: 頭盔
+UI raycasts reach the intended button: 頭盔 (hit 頭盔)
+A different NPC sells armor using the same wallet
+UI button is available: 結束交易
+UI raycasts reach the intended button: 結束交易 (hit 結束交易)
+UI button is available: 血包 ×1
+UI raycasts reach the intended button: 血包 ×1 (hit 血包 ×1（恢復 25 生命）)
+UI button is available: 背包擴充
+UI raycasts reach the intended button: 背包擴充 (hit 背包擴充 +5 格)
+The supply NPC sells health packs and backpack space
+Trades preserve map position, health, keys, and expedition progress
+UI button is available: 結束交易
+UI raycasts reach the intended button: 結束交易 (hit 結束交易)
+UI button is available: 返回主選單
+UI raycasts reach the intended button: 返回主選單 (hit 返回主選單)
+UI button is available: 旅人營地
+UI raycasts reach the intended button: 旅人營地 (hit 旅人營地 · NPC 交易)
+Completed trades survive camp/menu/camp scene reloads
+UI button is available: 進入遊戲
+UI raycasts reach the intended button: 進入遊戲 (hit 進入遊戲)
+The portal restores all purchased equipment, packs, space, and remaining gold in actual Map1
+Saved character identity survives the return portal
+Map1 restores the same lifetime weapon-purchase count as the camp
+UI button is available: 分裂路線
+
+遠程攻擊分成兩道扇形投射物
+每道 65% 傷害，適合封鎖寬路口。
+UI raycasts reach the intended button: 分裂路線
+
+遠程攻擊分成兩道扇形投射物
+每道 65% 傷害，適合封鎖寬路口。 (hit Upgrade Option)
+The pause shop uses the same four-purchase weapon lock
+The pause-shop purchase handler also rejects locked weapons without charging
+UI button is available: 震地戰錘
+UI raycasts reach the intended button: 震地戰錘 (hit Weapon Button)
+Pause-shop purchases count toward the same progressive unlocks
+Inventory snapshot capture/restore carries weapon unlock progress through the cooperative synchronization path
+The traded inventory can be saved from gameplay
+UI button is available: 繼續遊戲
+UI raycasts reach the intended button: 繼續遊戲 (hit 加入遊戲 Button)
+The original direct continue-game entry still restores the traded inventory
+UI button is available: 返回主選單
+UI raycasts reach the intended button: 返回主選單 (hit Return to Main Menu)
+Ending a victorious run settles gold and unlock count and marks the equipment as belonging to the finished run
+UI button is available: 旅人營地
+UI raycasts reach the intended button: 旅人營地 (hit 旅人營地 · NPC 交易)
+UI button is available: 以此角色出發
+UI raycasts reach the intended button: 以此角色出發 (hit 以此角色出發)
+The next run retains only gold/unlocks and resets weapons, armor, packs, and backpack to the new character's starting loadout
+Previously earned weapon unlocks remain available after a run ends
+UI button is available: 晨光法杖
+UI raycasts reach the intended button: 晨光法杖 (hit 晨光法杖)
+UI button is available: 結束交易
+UI raycasts reach the intended button: 結束交易 (hit 結束交易)
+UI button is available: 返回主選單
+UI raycasts reach the intended button: 返回主選單 (hit 返回主選單)
+Pre-run purchases and unlocks persist even if the camp is left before entering the portal
+UI button is available: 繼續遊戲
+UI raycasts reach the intended button: 繼續遊戲 (hit 加入遊戲 Button)
+A resumed preparation enters fresh Map1 with its newly bought weapon and no equipment IDs from the previous run
+The second run returns to the menu
+UI button is available: 開始新遊戲
+UI raycasts reach the intended button: 開始新遊戲 (hit New Game)
+UI button is available: 重設本輪
+UI raycasts reach the intended button: 重設本輪 (hit New Game)
+UI button is available: 以此角色出發
+UI raycasts reach the intended button: 以此角色出發 (hit 以此角色出發)
+Explicit New Game starts at camp, resets the old run's weapons, and preserves the bank and shop unlock progress
+UI button is available: 進入遊戲
+UI raycasts reach the intended button: 進入遊戲 (hit 進入遊戲)
+A real player death prevents overwriting the living map snapshot
+The quit-save hook retains the latest gold/unlocks even when the player is dead, without saving a dead health snapshot
+Insufficient gold leaves both the inventory and disk save unchanged
+A full backpack rejects weapons, armor, and the first health-pack stack without charging gold
+Backpack expansion works at full capacity and makes room for a health pack
+Existing health packs stack even when all backpack slots are occupied
+A real locked-file write failure rolls back the whole transaction
+A damaged primary recovers from backup and commits a valid trade
+Unrecoverable saves disable trading and remain untouched
+No runtime errors or exceptions occurred during the scene/transaction flow

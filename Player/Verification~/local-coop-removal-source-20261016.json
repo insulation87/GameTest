@@ -1,0 +1,46 @@
+﻿[
+    {
+        "file":  "Accounts/CloudAccountService.cs",
+        "sha256":  "21E67616AF2F5F6FCCCE4832B7419730371BE99EDC1647E2E9F20B066F3397E3"
+    },
+    {
+        "file":  "MainMenu/MainMenuController.cs",
+        "sha256":  "A1395C6842833DEE563FCE698520F7EFDBBA012AF02531B8E9A2E4048A511880"
+    },
+    {
+        "file":  "MainMenu/MultiplayerMenu.cs",
+        "sha256":  "E62B21E55868760A15136172EE5F57A8C8E72B64A5B2A13E80685419066E4B07"
+    },
+    {
+        "file":  "Multiplayer/CoopProtocol.cs",
+        "sha256":  "DD6C92463C7EB9313B933CD934462F412A3A13AC5DC2EC9769B18D3FBC1DE9B9"
+    },
+    {
+        "file":  "Multiplayer/CoopSession.cs",
+        "sha256":  "08ACA9FAABBD68EACA20746EA5AF01E4C8267628697DCEEE30D51B4E6D5986BE"
+    },
+    {
+        "file":  "Multiplayer/CoopActor.cs",
+        "sha256":  "B394CFD08B20BD5AF438849A91D84EDBAB03E58EDF057FA66E13AD4126DC259B"
+    },
+    {
+        "file":  "Multiplayer/CoopInput.cs",
+        "sha256":  "547CFB51CD7228B936D4AA7AED40B008C4E766CBED712BA5EDFACEA414C25C6A"
+    },
+    {
+        "file":  "Multiplayer/CoopRoomHud.cs",
+        "sha256":  "878F06B6B1908CB5C8463FA50920DB8E2677FFFD7734708DA29A887701F0310F"
+    },
+    {
+        "file":  "UI/GameControls.cs",
+        "sha256":  "528B7276061DFF3340154814404ADEE7EDC5237466DDF5F907A06DA51DF8E68C"
+    },
+    {
+        "file":  "UI/GameSettingsMenu.cs",
+        "sha256":  "2A138564D1446FCBDCA01A330494DA2BAA77530A80E80D77A1576E0C4B5D3029"
+    },
+    {
+        "file":  "UI/WeaponBuildGuideUI.cs",
+        "sha256":  "097C0DE78FE272F9D10BEC318DAB4E2D86A8095547430F8853F0D6210D3E7483"
+    }
+]

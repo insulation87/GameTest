@@ -1,0 +1,1 @@
+PASS: deployed formal player remained running for 65 seconds; D3D11/Mono initialized; no exception/missing script. Hidden-window startup only.

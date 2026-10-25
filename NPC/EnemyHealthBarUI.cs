@@ -25,6 +25,9 @@ public class EnemyHealthBarUI : MonoBehaviour
 
     void Awake()
     {
+        backgroundColor = GameUITheme.Recess;
+        healthColor = GameUITheme.Health;
+        levelTextColor = GameUITheme.Ivory;
         health = GetComponent<EnemyHealth>();
         FindFacingTarget();
         BuildHealthBar();

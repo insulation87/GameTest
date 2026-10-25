@@ -1,0 +1,4 @@
+FAIL System.InvalidOperationException: A split-screen run starts with custom bindings
+  at GameControlsReview.Check (System.Boolean value, System.String message) [0x00026] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\UI\Editor\GameControlsReview.cs:63 
+  at GameControlsReview+<Checks>d__20.MoveNext () [0x00e2e] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\UI\Editor\GameControlsReview.cs:160 
+  at GameControlsReview.Tick () [0x0000e] in C:\Users\User\AppData\Local\Temp\GameTest-AuthoredWorld-71defa6829c94a2f9ebe78d3a012cc0c\ClientProject\Assets\Script\UI\Editor\GameControlsReview.cs:50 

@@ -1,0 +1,9 @@
+PASS 6 native Unity checks
+Real Windows Unity player executes the probe
+Built Resources contains the configured public WSS endpoint
+Native Unity player reaches public HTTPS health endpoint
+Invalid token cannot create a public room
+Native Unity WSS reaches relay and translates real invalid-token rejection
+No native game runtime errors
+
+No valid account login or public room creation was performed.

@@ -7,9 +7,14 @@ using UnityEngine.SceneManagement;
 [DefaultExecutionOrder(-200)]
 public sealed class DungeonHazardDirector : MonoBehaviour
 {
-    [Min(1)] public int roomInterval = 3;
+    [Min(1)] public int roomInterval = 1;
+    [Range(1,3)] public int hazardsPerRoom = 2;
     public int SpikeCount { get; private set; }
     public int CollapsingFloorCount { get; private set; }
+    public int FlameVentCount { get; private set; }
+    public int SweepingBladeCount { get; private set; }
+    public int BlastRuneCount { get; private set; }
+    public int TotalCount => placed.Count;
     public bool Built { get; private set; }
     readonly List<GameObject> placed = new List<GameObject>();
     DungeonFloorOpening openings;
@@ -31,6 +36,8 @@ public sealed class DungeonHazardDirector : MonoBehaviour
     public void Build()
     {
         if(Built) return;
+        // Indoor floor mechanisms do not belong on the meadow/forest surface.
+        if (OverworldDirector.EnsureWorld() != null) { Built = true; return; }
         Built=true;
         Player player=FindFirstObjectByType<Player>();
         if(player==null) return;
@@ -40,33 +47,48 @@ public sealed class DungeonHazardDirector : MonoBehaviour
         openings=gameObject.AddComponent<DungeonFloorOpening>();
         for(int i=0;i<rooms.Count;i++)
         {
-            // The initial hall stays safe; alternate mechanism types across three floors.
-            if(i==0 || i%Mathf.Max(1,roomInterval)!=1) continue;
+            // Keep the initial hall and the central cross clear; mix mechanisms at room edges.
+            if(i==0 || i%Mathf.Max(1,roomInterval)!=(roomInterval > 1 ? 1 : 0)) continue;
             DungeonMarker room=rooms[i];
             DungeonRoomBoundary boundary=DungeonRoomBoundary.GetOrCreate(room);
             if(boundary==null || IsBossRoom(boundary,markers)) continue;
-            DungeonHazardKind kind=(i/Mathf.Max(1,roomInterval))%2==0 ? DungeonHazardKind.Spikes : DungeonHazardKind.CollapsingFloor;
-            float offset=Mathf.Min(boundary.halfSize.x,boundary.halfSize.y)*.5f;
+            float offset=Mathf.Min(boundary.halfSize.x,boundary.halfSize.y)*.55f;
             if(offset<5.5f) continue;
-            foreach(Vector2 quadrant in new[] { new Vector2(-1,1),new Vector2(1,-1),new Vector2(-1,-1),new Vector2(1,1) })
+            var quadrants = new[] { new Vector2(-1,1),new Vector2(1,-1),new Vector2(-1,-1),new Vector2(1,1) };
+            int wanted = Mathf.Clamp(hazardsPerRoom + (room.name.StartsWith("L3_",StringComparison.Ordinal) ? 1 : 0),1,3);
+            int inRoom = 0;
+            for (int q = 0; q < quadrants.Length && inRoom < wanted; q++)
             {
+                Vector2 quadrant = quadrants[(q + i) % quadrants.Length];
+                DungeonHazardKind kind = (DungeonHazardKind)((i * 2 + inRoom) % 5);
                 Vector3 candidate=room.transform.TransformPoint(new Vector3(quadrant.x*offset,0,quadrant.y*offset));
-                if(!boundary.Contains(candidate,2f) || IsProtected(candidate,player,markers)) continue;
+                float half = kind == DungeonHazardKind.BlastRune ? DungeonHazard.BlastRadius : DungeonHazard.Width * .5f;
+                Vector3 localScale = room.transform.lossyScale;
+                if (offset * Mathf.Min(Mathf.Abs(localScale.x),Mathf.Abs(localScale.z)) < half + 2.4f ||
+                    !boundary.Contains(candidate,half + .6f) || IsProtected(candidate,player,markers) || IsUnsafe(candidate,half + .8f)) continue;
                 if(!FindFloor(candidate,out BoxCollider floor,out Vector3 surface)) continue;
                 if(Physics.OverlapBox(surface+Vector3.up*1.05f,new Vector3(1.65f,1f,1.65f),floor.transform.rotation,
                     Physics.AllLayers,QueryTriggerInteraction.Ignore).Length>0) continue;
                 if(kind==DungeonHazardKind.CollapsingFloor && !openings.Cut(floor,surface,DungeonHazard.Width,transform)) continue;
-                var node=new GameObject(kind==DungeonHazardKind.Spikes?"警示地刺":"崩落地板");
+                if (kind == DungeonHazardKind.CollapsingFloor) Physics.SyncTransforms();
+                string[] labels = { "警示地刺", "崩落地板", "節奏火焰地板", "掃掠刀刃", "誘敵爆裂符文" };
+                var node=new GameObject(labels[(int)kind]);
                 // Keep dimensions in world metres even when an imported map root is scaled.
                 node.transform.SetPositionAndRotation(surface,floor.transform.rotation);
                 node.transform.SetParent(transform,true);
-                var hazard=node.AddComponent<DungeonHazard>();hazard.Initialize(kind);placed.Add(node);
-                if(kind==DungeonHazardKind.Spikes) SpikeCount++; else CollapsingFloorCount++;
-                break;
+                var hazard=node.AddComponent<DungeonHazard>();hazard.cycleOffset = (i * 1.37f + inRoom * .81f); hazard.Initialize(kind);placed.Add(node); inRoom++;
+                switch (kind)
+                {
+                    case DungeonHazardKind.Spikes: SpikeCount++; break;
+                    case DungeonHazardKind.CollapsingFloor: CollapsingFloorCount++; break;
+                    case DungeonHazardKind.FlameVent: FlameVentCount++; break;
+                    case DungeonHazardKind.SweepingBlade: SweepingBladeCount++; break;
+                    case DungeonHazardKind.BlastRune: BlastRuneCount++; break;
+                }
             }
         }
         Physics.SyncTransforms();
-        Debug.Log($"已配置 {SpikeCount} 組地刺與 {CollapsingFloorCount} 塊崩落地板。",this);
+        Debug.Log($"已配置 {TotalCount} 組機關：地刺 {SpikeCount}、崩落 {CollapsingFloorCount}、火焰 {FlameVentCount}、刀刃 {SweepingBladeCount}、符文 {BlastRuneCount}。",this);
     }
     static bool IsBossRoom(DungeonRoomBoundary room,List<DungeonMarker> markers)
     {
@@ -105,10 +127,11 @@ public sealed class DungeonHazardDirector : MonoBehaviour
     }
     public static bool IsUnsafe(Vector3 point,float clearance=0f)
     {
-        foreach(DungeonHazard hazard in FindObjectsByType<DungeonHazard>(FindObjectsSortMode.None))
+        foreach(DungeonHazard hazard in DungeonHazard.All)
         {
+            if (hazard == null) continue;
             Vector3 local=hazard.transform.InverseTransformPoint(point);
-            float half=DungeonHazard.Width*.5f+Mathf.Max(0,clearance);
+            float half=hazard.UnsafeHalfSize+Mathf.Max(0,clearance);
             if(Mathf.Abs(local.x)<half && Mathf.Abs(local.z)<half && local.y>-4.5f && local.y<3f) return true;
         }
         return false;

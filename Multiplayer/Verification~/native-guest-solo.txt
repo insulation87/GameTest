@@ -1,0 +1,52 @@
+PASS
+Actual Login scene and login UI initialize
+Actual guest button enters guest mode without account authentication
+Actual MainMenu survives the login transition
+Guest saves are isolated from account and legacy progress
+Guest cannot query or invite cloud friends
+MainMenu disables friends for guests
+Guest is refused Internet hosting at session API
+Guest is refused Internet joining at session API
+LAN policy rejects public Internet IPs and accepts loopback
+Actual menu produces a visible offscreen UI capture
+Release player loads actual Map1 through the normal scene flow
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+Standalone player lands safely and initializes saves
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Standalone region 1 completion displays portal guidance
+Standalone region 2 arrival is safe
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Standalone region 2 completion displays portal guidance
+Standalone region 3 arrival is safe
+Standalone fantasy monster spawns on baked navigation
+Standalone monsters have live navigation
+Standalone outdoor progress writes and reads successfully
+Gameplay camera produces a live render target
+Offscreen gameplay rendering fills the camera target with visible scene content
+Guest identity cannot change while a map is running
+Guest returns to the actual menu
+Exiting guest mode returns to login without retaining guest access
+Guest-to-account transition selects a separate account save
+Guest save remains intact after signing into an account
+Signing in unlocks the actual friend menu button
+No unexpected Unity gameplay errors: 

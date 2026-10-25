@@ -1,0 +1,98 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Actual saved outdoor Map1 starts a fresh isolated balance review
+Map1 requires exactly 10 and 20 progression items
+Previously saved counts of 3 and 6 do not prematurely unlock the new requirements
+Real saved Map1 spawner produces a region 1 enemy
+Generated region 1 enemy retains the exact one-percent progression drop chance
+Region 1 actual loot rolls produce rare, correctly labelled keys: 25/3000
+Region 1 real enemy death drops below the one-percent boundary
+Region 1 real enemy death does not drop at or above the one-percent boundary
+Real saved Map1 spawner produces a region 2 enemy
+Generated region 2 enemy retains the exact one-percent progression drop chance
+Region 2 actual loot rolls produce rare, correctly labelled keys: 30/3000
+Region 2 real enemy death drops below the one-percent boundary
+Region 2 real enemy death does not drop at or above the one-percent boundary
+Real saved Map1 spawner produces a region 3 enemy
+Generated region 3 enemy retains the exact one-percent progression drop chance
+Region 3 actual loot rolls produce rare, correctly labelled keys: 41/3000
+Region 3 real enemy death drops below the one-percent boundary
+Region 3 real enemy death does not drop at or above the one-percent boundary
+Safe player placement at (111.00, 0.00, 128.80)
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+One key below region 1 requirement keeps both portal and guidance locked
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Exactly 10 keys unlock region 2 and portal guidance
+Actual objective UI displays the updated region 1 requirement
+Safe player placement at (111.00, 0.05, 27.80)
+Unlocked portal accepts the actual player's travel request
+Unlocked region 2 arrival stays alive and grounded
+Safe player placement at (531.00, 0.00, 128.80)
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+One key below region 2 requirement keeps both portal and guidance locked
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Exactly 20 keys unlock region 3 and portal guidance
+Actual objective UI displays the updated region 2 requirement
+Safe player placement at (531.00, 0.05, 179.80)
+Unlocked portal accepts the actual player's travel request
+Unlocked region 3 arrival stays alive and grounded
+Actual single-player save retains the new 10/20 key totals
+No unexpected Unity gameplay errors: 

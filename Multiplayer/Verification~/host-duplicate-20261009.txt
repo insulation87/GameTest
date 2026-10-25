@@ -1,0 +1,15 @@
+Host duplicate review - 2026-10-09
+
+No production game or relay code changed. Local isolated Auth fixture and actual relay sockets only; the user's public room state was not inspected.
+
+PASS 8 targeted relay checks
+First host creates a room
+The same account cannot create a second room while its old host connection is open
+A different account can create its own room
+A friend using a different account can join the first room
+A different friend account does not release the existing host account
+Closing the host terminates its old room
+The old host account can create a new room after its connection is closed
+The old room is removed
+
+Broader protocol rerun initially stopped on ChannelClosedException during token-renewal rejection. It did not complete; the eight host-duplicate and disconnect-cleanup checks above were run separately and passed. No fix or broader protocol pass is claimed.

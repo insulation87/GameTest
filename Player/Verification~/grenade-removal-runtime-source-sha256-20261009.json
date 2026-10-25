@@ -1,0 +1,382 @@
+﻿[
+    {
+        "File":  "UI\\WeaponBuildGuideUI.cs",
+        "SHA256":  "91FF5EED2F5B0DD0F3374A29BB5B63961569DB99D92349E9B994A4C3A19866F4"
+    },
+    {
+        "File":  "UI\\VictoryCrownGraphic.cs",
+        "SHA256":  "40CC013345EE68C4360ABC6D978B18BC1310C1321C39409EA0ED0EEC8C2B6312"
+    },
+    {
+        "File":  "UI\\MainMenuPresentation.cs",
+        "SHA256":  "C0CD34AE45EC4D45EFFEA40632D0A738FCBBC7C592A364A428F40F23F847A034"
+    },
+    {
+        "File":  "UI\\GameUITheme.cs",
+        "SHA256":  "278DA032B5F59EC469B6B0D89A179C4AEE808F9AD547505C921D14C63EF85A76"
+    },
+    {
+        "File":  "UI\\GameUIFrame.cs",
+        "SHA256":  "8E5FC24CD246471AD79F29E47423D10B49E40402745BA6EB1EA68F3EA79FCAA3"
+    },
+    {
+        "File":  "UI\\GameSettingsMenu.cs",
+        "SHA256":  "84E40458F98B4C28C86250A53F1D9CD469516DA118408830BED05E8F24C5D473"
+    },
+    {
+        "File":  "UI\\GameSettings.cs",
+        "SHA256":  "8F923370ACDBE60C095F8D5F6E3EFE366BB961B6E1487EED3CEE47C6FDD0FCCD"
+    },
+    {
+        "File":  "UI\\GameLoadingScreen.cs",
+        "SHA256":  "361E0D3DB096FA931649588AF6A17472BA33189401C957AA49321F8C74248333"
+    },
+    {
+        "File":  "UI\\GameControls.cs",
+        "SHA256":  "F4E14442F26FB1CA944476108F2B4BA409F9E94AED3E7A1DD8A77C565394456F"
+    },
+    {
+        "File":  "UI\\DungeonVictoryUI.cs",
+        "SHA256":  "ED863B1D3E0EDEF7971570948FBB0E74FCB060E90AEF403FFE3738A68F62D0C2"
+    },
+    {
+        "File":  "Player\\WeaponLoot.cs",
+        "SHA256":  "A3A098F7D0848C7DDC42148628C5F9B42216DAB8168DD3D84EECDA29B4EC9712"
+    },
+    {
+        "File":  "Player\\WeaponBuildSystem.cs",
+        "SHA256":  "3425E09ECDD0201A064AC017926B81373D31B84A004F21BB03B7BABD1B11F113"
+    },
+    {
+        "File":  "Player\\RogueTactics.cs",
+        "SHA256":  "19106A6EB7CFCDCDE683B32B0767C04CF91B67BDE4013F12B24EB7AD2941C401"
+    },
+    {
+        "File":  "Player\\CrosshairUI.cs",
+        "SHA256":  "AD1B7465AA28F255350639633F26BAF94B8DF9CA6ABB8C5A7FA655C6ECD299D8"
+    },
+    {
+        "File":  "Player\\CombatMomentum.cs",
+        "SHA256":  "7C93A48A514763AA612896618CB9050F259FE00BDA68F6D67F485BB29E740774"
+    },
+    {
+        "File":  "Player\\CharacterWeapons.cs",
+        "SHA256":  "7E6A928362073C0384F07DD07FFA4957CE94F4BD438D1F2354BC391FA7A5300F"
+    },
+    {
+        "File":  "Player\\CharacterSkills.cs",
+        "SHA256":  "3D343FE9757B976D316AC2296669BD0127797023B21D0B793C8D25D80F789AC7"
+    },
+    {
+        "File":  "Player\\CharacterRoster.cs",
+        "SHA256":  "5EF70396D3F9B4AEEA73360A6B5E1F44C93609CA2A456FD5E8599EA029469BD8"
+    },
+    {
+        "File":  "Player\\PickupMagnet.cs",
+        "SHA256":  "994A254D6A8B9A5E7ABB1D9BE1ABE885BE2A70D087971D8807FE55447ADE000E"
+    },
+    {
+        "File":  "Player\\LocalAccountProgress.cs",
+        "SHA256":  "12F195981623C7C6F18952E885195407BDA7D9F2EAD96A50DF74B4A062A075BD"
+    },
+    {
+        "File":  "Player\\ItemIconGraphic.cs",
+        "SHA256":  "19DE58A50FAFFAD6461F69792E0CA4846BBE4D9AEA45D46F389A1DCCE53D169B"
+    },
+    {
+        "File":  "Player\\ItemAppearance.cs",
+        "SHA256":  "70DC7821254F8CF0E8E5A87ADF9CE53D54D37195C32AF8667239F216EA5F7BF0"
+    },
+    {
+        "File":  "Player\\GameProgressState.cs",
+        "SHA256":  "3AD2D77855F2328F55114FC18FE3295F5545C78411003B4219F113390EE57753"
+    },
+    {
+        "File":  "Player\\GameProgressSave.cs",
+        "SHA256":  "821F930A29CE6D4F8E3D2A107DF961B07AC7B2FB38B8897D41045D5C06A2B2B2"
+    },
+    {
+        "File":  "Player\\ArmorEquipment.cs",
+        "SHA256":  "7625B994305AA8632AB5E188A830C56D2952401A3AC614105C2150A5D495235D"
+    },
+    {
+        "File":  "Player\\PlayerHealth.cs",
+        "SHA256":  "8571CBFECCE8D035F1CC0D6A575F479D6CB29443343F6B9F23604D534EED42BB"
+    },
+    {
+        "File":  "Player\\PlayerCursorController.cs",
+        "SHA256":  "4C294251C2BEB964A00B2C343766E2557B84CE5399FC5A97FA4E237BD1EF3C9A"
+    },
+    {
+        "File":  "Player\\PlayerCollision.cs",
+        "SHA256":  "83B8679A5B7867B70A55139EC2947AEF3E252DEA9F33ACE4D003D62AD1FA7493"
+    },
+    {
+        "File":  "Player\\Player.cs",
+        "SHA256":  "CAA9155DFF1193CEA03F0B330CA291BD33D7421FA3007107783C9D1772A6C807"
+    },
+    {
+        "File":  "Player\\PlayerShooter.cs",
+        "SHA256":  "F94F850FAA3C728261740A4916A4EDB14A361BEEEE4613F2F0E214A71EC20E0C"
+    },
+    {
+        "File":  "Player\\PlayerHealthBarUI.cs",
+        "SHA256":  "0835A4127C06EE9C0BF2A171C1BCE88237A7D77B63A30CB2836D87E4F4A56491"
+    },
+    {
+        "File":  "Player\\Projectile.cs",
+        "SHA256":  "72AE41B758D1B85344D02DDAC4C8303153508BA016370066230803DCD1805B08"
+    },
+    {
+        "File":  "PixelArt\\PixelTerrainStyle.cs",
+        "SHA256":  "672D4EA09016935C0EE5C5FF431C83A3C6B3CD3CE4D57DD603A17E5346E84F4F"
+    },
+    {
+        "File":  "PixelArt\\PixelMonsterFactory.cs",
+        "SHA256":  "49E778A63A26564B8FBD62735CF76DF314BC4D134D894730BD0AF8B43772C1F8"
+    },
+    {
+        "File":  "PixelArt\\PixelMenuBackdrop.cs",
+        "SHA256":  "F03EBDD451CBDD198CE3EB4CF101D907D4C7775AAA33B5A4F6B4D5ED56FE5785"
+    },
+    {
+        "File":  "PixelArt\\PixelCharacterFactory.cs",
+        "SHA256":  "0B471022115776C9961C20B11CACD984CBCE1D37F952AEB5FFAF8D8C21C5406B"
+    },
+    {
+        "File":  "PixelArt\\PixelArtDirector.cs",
+        "SHA256":  "D5BA26233BB2B316781A87563C899E0BAD008A4596DD1692119303825F9AD436"
+    },
+    {
+        "File":  "PixelArt\\PixelArtCamera.cs",
+        "SHA256":  "B15D23351FC4A5715A57AFE11FCCE747DA2A735B216C1CCA3776D2215A303EB8"
+    },
+    {
+        "File":  "Accounts\\LoginSceneController.cs",
+        "SHA256":  "BB251E106932A0CAC977A7AF0282BDF3EB55215DE3EEA60A231D59743C75028D"
+    },
+    {
+        "File":  "MainMenu\\MultiplayerMenu.cs",
+        "SHA256":  "73BC9C7240E44CBB33D7BD08C3BDF8B0FDED0DEC47D5E51156A775228563B096"
+    },
+    {
+        "File":  "MainMenu\\MainMenuController.cs",
+        "SHA256":  "17A460919D86FF2EB5420CA6DDF572ACCC404AB18438B9283017834091E34906"
+    },
+    {
+        "File":  "MainMenu\\GameSceneFlow.cs",
+        "SHA256":  "9C594B4024F5B435A3C06EA54C706EA68E787743B424E30CCB793DC179AA8A2A"
+    },
+    {
+        "File":  "MainMenu\\FriendsMenu.cs",
+        "SHA256":  "A84AB7830BB2400EA0D1D24DA34EBE6245050DB88951D8142C66BAC14FFB5E52"
+    },
+    {
+        "File":  "Accounts\\CloudFriendsService.cs",
+        "SHA256":  "E99DB9C426EBC384D95100AA08C2DAEAE90651AA8C0FBB33F2B9FA8B553037A9"
+    },
+    {
+        "File":  "Accounts\\CloudAuthTransport.cs",
+        "SHA256":  "0897C63ADCBDA1CADE8E1B0280C59F6844EE4BF3F1D089E6F4E57413E0F22B5D"
+    },
+    {
+        "File":  "Accounts\\CloudAuthConfig.cs",
+        "SHA256":  "CC6E866B7B9F5F7D61D38D692E5374B1ADB2449DD70F0783BB7ABFA77E304EAA"
+    },
+    {
+        "File":  "Accounts\\CloudAccountService.cs",
+        "SHA256":  "21639636FA55AB0C13249BA145988A98608E09B75316314B634CF3EB549062AF"
+    },
+    {
+        "File":  "Camera\\CameraFollowTPS.cs",
+        "SHA256":  "013BA7F534A1DAB412C5C6DE07D9A603ADC5787E72EF02939250295384FABF3E"
+    },
+    {
+        "File":  "Camera\\FPSCameraLook.cs",
+        "SHA256":  "ED5A7FE87AB5496B753CFE34B1261541DFACD5229FB07A7A0F8B92883CC0553F"
+    },
+    {
+        "File":  "MainMenu\\CharacterSelectionMenu.cs",
+        "SHA256":  "590B7E8DCF5F4774DF6F821F67C909186CC636C49CB1643360C9EF310A30010F"
+    },
+    {
+        "File":  "Camera\\CameraCollision.cs",
+        "SHA256":  "A2982C2A48C0578C854CB43B501FFE9E501A46C2AC50DC0F0495527D5C69C7EC"
+    },
+    {
+        "File":  "Camera\\CameraSwitch.cs",
+        "SHA256":  "AC7D31242E3BD1B970EAC8868949699C1EABAF1567AC69444C6FE6A85650558F"
+    },
+    {
+        "File":  "Localization\\GameUIFont.cs",
+        "SHA256":  "725BD379F2D505E33256652BE3EFBE6A5B64440CB3035CDD975C257941118038"
+    },
+    {
+        "File":  "Accounts\\AccountLoginPanel.cs",
+        "SHA256":  "374D8F59EF881826054BAE4F3ACDEB5D2A08E8E1FE35325F4609C0D2288A65E7"
+    },
+    {
+        "File":  "Audio\\GameAudio.cs",
+        "SHA256":  "BC7BBB89D9E53B7CA0CB68F2406CD5AC83BE94B36957A1B4B5FF2082CF81E221"
+    },
+    {
+        "File":  "Audio\\GameMusic.cs",
+        "SHA256":  "0C888E2259D5E4FD4B4DF2DB7EC1F6870CB0B88872EAC85A301B59EA21B24BA5"
+    },
+    {
+        "File":  "Audio\\GameSoundBank.cs",
+        "SHA256":  "927B16CE05B5BCEE8AF802B82E2892619EFF1F94D8DAA33ED431D4D5C9B190C2"
+    },
+    {
+        "File":  "Dungeon\\DungeonHazard.cs",
+        "SHA256":  "EAF9E33350E5BAE57091EA2F91E227A323FA1A031CF1751AB3F94F6B90648108"
+    },
+    {
+        "File":  "Dungeon\\DungeonPillarCollisions.cs",
+        "SHA256":  "7B121BE421459299EC1D825A079C89F99D0E57EF204832A8D50877406F209443"
+    },
+    {
+        "File":  "Dungeon\\DungeonFloorOpening.cs",
+        "SHA256":  "AD0C5635084063250E015578CDAF82AB9A1DE9456C0248C08BF8AE34B60B4E56"
+    },
+    {
+        "File":  "Dungeon\\DungeonHazardMechanisms.cs",
+        "SHA256":  "8BD3B1CC92F42B1C298C1FBD45310F7C331D5B4F1E9E136DC35A6A37736A65F3"
+    },
+    {
+        "File":  "Dungeon\\DungeonHazardDirector.cs",
+        "SHA256":  "71E1B95EC975F556AA098DB01059974515BA4463A59D918714665EAD5E2DD1D6"
+    },
+    {
+        "File":  "Dungeon\\ExplorationMinimap.cs",
+        "SHA256":  "6D2A4214B0FD6CD28653E36309440BFE56AF07BD7882C4ED110B29895F0B447E"
+    },
+    {
+        "File":  "Dungeon\\BossTestShortcut.cs",
+        "SHA256":  "5BF20CC473129C665952B278477AB12BF57A7289A5F208ABFFFACC492263C38E"
+    },
+    {
+        "File":  "Dungeon\\BossSpawner.cs",
+        "SHA256":  "9E1CED76D2364941E4E8FE524A5A96950E9B8B4429C9116C334B3813731674B0"
+    },
+    {
+        "File":  "Dungeon\\BossController.cs",
+        "SHA256":  "8502CEE9FFFED359BD0B9F7ACDFD1684C18A719187E595045EC7BB6EDC7D2A89"
+    },
+    {
+        "File":  "Dungeon\\FloorKeyPickup.cs",
+        "SHA256":  "B9618743EE751A9CA0CF2B6C33E343FD15604169034C8BA59E675A42A2FC40A6"
+    },
+    {
+        "File":  "Dungeon\\FallDeathZone.cs",
+        "SHA256":  "6997FD5133AFA9FCD222D517D31C4C3259F641277C3B03FE7821D3813E83C2F9"
+    },
+    {
+        "File":  "Dungeon\\FloorProgressionManager.cs",
+        "SHA256":  "46178BF6EBCC1773087461622D0290D5E4B268269078295F65BB7DF04E2D03DC"
+    },
+    {
+        "File":  "Dungeon\\OverworldDirector.cs",
+        "SHA256":  "807225B33D01D1A10226C973BF0D9B1CDBCF877D938AF7DF33AC9CC13560C96F"
+    },
+    {
+        "File":  "Multiplayer\\CoopSession.cs",
+        "SHA256":  "916433D706D784D73A679743065D9F08174A3C24371DB9E947C7B38C09E15472"
+    },
+    {
+        "File":  "Multiplayer\\CoopRoomHud.cs",
+        "SHA256":  "70FBEFE30FFF3014C823881EBC3589B1010C7658412728D8E0CC5F82D77E99F6"
+    },
+    {
+        "File":  "Multiplayer\\CoopProtocol.cs",
+        "SHA256":  "D9DD0C5C6ACB104A24FC1434AFEF5437D989A9AFAC4B90DB95919562A916F906"
+    },
+    {
+        "File":  "Multiplayer\\CoopInput.cs",
+        "SHA256":  "72B4072DEF8AC39C2767B9EAEB2E2E3DB3C9602DF04DF5B3BA214AA76E1C1043"
+    },
+    {
+        "File":  "Multiplayer\\CoopGameplayState.cs",
+        "SHA256":  "A5C9150FCDDF17C47B2F548E29E07A4943C65FD7585E6ABC57EB44202E8ED82D"
+    },
+    {
+        "File":  "Multiplayer\\CoopActor.cs",
+        "SHA256":  "0E85C12FA52469FE4795E095F249217B50297BA5C91D6DB18E32FD7FDDD90809"
+    },
+    {
+        "File":  "Multiplayer\\CloudRelayTransport.cs",
+        "SHA256":  "24E284645336DA219F68FD09CC7BC12ED51D4FE36E85935515D6E0D92F426054"
+    },
+    {
+        "File":  "Multiplayer\\CloudRelayConfig.cs",
+        "SHA256":  "CDB9D9F2C86B0E60CAD79628B78EA9E2D9E519AF4B9E463FCF29C9552E808200"
+    },
+    {
+        "File":  "Dungeon\\OverworldProgression.cs",
+        "SHA256":  "15E733ED6663C3D26B33CF289D5D3F437D2A71FF8F97D020C46DAF850C918987"
+    },
+    {
+        "File":  "Multiplayer\\ICoopTransport.cs",
+        "SHA256":  "EC07D3FC23E626AA2D72FCF5C6DB7CAEF24095E1F6CC35C8B7401C2103765622"
+    },
+    {
+        "File":  "Multiplayer\\CoopTransport.cs",
+        "SHA256":  "F258A56F69A3B6D31E0BDED85C5C50EE0F5372E45C60D61F211DBA6887AC2283"
+    },
+    {
+        "File":  "Dungeon\\TreasureChestDirector.cs",
+        "SHA256":  "07CDF5E0B5B79EDAFE63C44E25FB89E5CAA6E8792BBFC92F802141DC95025689"
+    },
+    {
+        "File":  "Multiplayer\\CoopWorldMirror.cs",
+        "SHA256":  "0BCA0D61A288B1F78E193098B2771215986DA9C3D56CC8FEABD2878F9FF50F88"
+    },
+    {
+        "File":  "Dungeon\\TreasureChest.cs",
+        "SHA256":  "EEDFF11AB90C7E6FE854DC1270565B3D10A25F39F91CEDD702FDAC76792E65B6"
+    },
+    {
+        "File":  "Dungeon\\OverworldValidationProbe.cs",
+        "SHA256":  "C3D402123013F1021B08AD99DEA566645BEA0ECDF458516D9CEBC24F9BF19F97"
+    },
+    {
+        "File":  "Multiplayer\\LanAccess.cs",
+        "SHA256":  "C11EDA40335AB930FDF69396C904619F9098B4F7557F5292A62413D15851475F"
+    },
+    {
+        "File":  "NPC\\EnemyHealth.cs",
+        "SHA256":  "327F7795413CD76803DB3820AF854928B1E31FD378CFC604731861DD16D53DE4"
+    },
+    {
+        "File":  "NPC\\EnemyCombatRules.cs",
+        "SHA256":  "C015694495BACF8771FFF44D6C781671911A61678BB653CB7F4F33FB23AC960E"
+    },
+    {
+        "File":  "NPC\\EnemyCharacterVisual.cs",
+        "SHA256":  "11E535A3F5662EBFF1C0ED733DD77CC0EB348C2E25A6707FC26AD84DAAC7CD9B"
+    },
+    {
+        "File":  "NPC\\EnemyAI.cs",
+        "SHA256":  "594B70EE40AF3864E50BD97F037DF6653A7485473B05FAEDC00D173547940439"
+    },
+    {
+        "File":  "NPC\\NPCSpawner.cs",
+        "SHA256":  "B38EB6EFD4D561A45AA1476368C25E8508D24C3C4D4D93B2FED1DEF8831FDAE7"
+    },
+    {
+        "File":  "NPC\\EnemyProjectile.cs",
+        "SHA256":  "18C199ED0B66714A8748EFBAC2C183A5673C279230350BFF14F4785DE09747D8"
+    },
+    {
+        "File":  "NPC\\EnemyHitFlash.cs",
+        "SHA256":  "ED06C378E3ABC15C8E2CFB57B66C7503A0D374F62CA2558200FE772AC6B219D6"
+    },
+    {
+        "File":  "NPC\\EnemyHealthBarUI.cs",
+        "SHA256":  "7E3E270B958FBBEF131DDE95D7EF43A75A398E83EF1A51C19510BB45656C79ED"
+    },
+    {
+        "File":  "Dungeon\\DungeonRoomBoundary.cs",
+        "SHA256":  "875FB5FB361BC2A5839A72CEC9BD26E96B6347BF9381421DABB3B9B454DBE686"
+    }
+]

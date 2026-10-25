@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -23,6 +23,7 @@ public sealed class GameAudio : MonoBehaviour
     readonly Voice[] voices = new Voice[UIChannels + WorldChannels];
     readonly System.Random pitchRandom = new System.Random(91027);
     AudioSource ambience;
+    float ambienceGain;
     GameMusic music;
     AudioListener fallbackListener;
     Player player;
@@ -47,7 +48,7 @@ public sealed class GameAudio : MonoBehaviour
         if (instance != null && instance != this) { Destroy(gameObject); return; }
         instance = this;
         DontDestroyOnLoad(gameObject);
-        AudioListener.volume = Mathf.Clamp01(PlayerPrefs.GetFloat("Settings.MasterVolume", 1f));
+        AudioListener.volume = GameSettings.Current.masterVolume;
         foreach (GameSound cue in Enum.GetValues(typeof(GameSound))) clips.Add(cue, GameSoundBank.Create(cue));
         for (int i = 0; i < voices.Length; i++)
         {
@@ -80,6 +81,12 @@ public sealed class GameAudio : MonoBehaviour
     public static void At(GameSound cue, Vector3 position, float gain = 1f) { Ensure()?.Emit(cue, position, true, false, gain); }
     public static void Shot(WeaponType type)
     {
+        if (CharacterWeapons.IsCharacterWeapon(type))
+        {
+            Local(CharacterWeapons.IsMelee(type) ? GameSound.Sword :
+                type == WeaponType.Longbow || type == WeaponType.RepeatingCrossbow ? GameSound.Crossbow : GameSound.MagicCast);
+            return;
+        }
         switch (type)
         {
             case WeaponType.SubmachineGun: Local(GameSound.SubmachineGun); break;
@@ -94,7 +101,7 @@ public sealed class GameAudio : MonoBehaviour
 
     void Emit(GameSound cue, Vector3 position, bool spatial, bool ui, float gain)
     {
-        if ((!focused && !Application.isBatchMode) || (!ui && Time.timeScale <= 0f) || gain <= 0f) return;
+        if ((!focused && GameSettings.Current.muteInBackground && !Application.isBatchMode) || (!ui && Time.timeScale <= 0f) || gain <= 0f) return;
         float now = Time.unscaledTime;
         float cooldown = cue == GameSound.Hover ? .09f : cue == GameSound.Experience || cue == GameSound.Pickup ? .07f :
             cue == GameSound.Heal ? .3f : cue == GameSound.Denied ? .15f : .025f;
@@ -117,7 +124,7 @@ public sealed class GameAudio : MonoBehaviour
         chosen.paused = false;
         chosen.started = now;
         chosen.gain = GameSoundBank.Gain(cue) * Mathf.Clamp01(gain);
-        chosen.source.volume = chosen.gain;
+        chosen.source.volume = chosen.gain * GameSettings.Current.effectsVolume;
         chosen.source.spatialBlend = spatial ? 1f : 0f;
         chosen.source.transform.position = spatial ? position : transform.position;
         chosen.source.pitch = ui ? 1f : .96f + (float)pitchRandom.NextDouble() * .08f;
@@ -127,7 +134,7 @@ public sealed class GameAudio : MonoBehaviour
 
     void Update()
     {
-        bool unfocused = !focused && !Application.isBatchMode;
+        bool unfocused = !focused && GameSettings.Current.muteInBackground && !Application.isBatchMode;
         int playing = 0;
         foreach (Voice voice in voices) if (voice != null && voice.source.isPlaying) playing++;
         float mixGain = 1f / Mathf.Max(1f, Mathf.Sqrt(playing / 4f));
@@ -138,11 +145,12 @@ public sealed class GameAudio : MonoBehaviour
             bool pause = unfocused || (i >= UIChannels && Time.timeScale <= 0f);
             if (pause && !voice.paused && voice.source.isPlaying) { voice.source.Pause(); voice.paused = true; }
             else if (!pause && voice.paused) { voice.source.UnPause(); voice.paused = false; }
-            voice.source.volume = voice.gain * mixGain;
+            voice.source.volume = voice.gain * mixGain * GameSettings.Current.effectsVolume;
         }
         float ambienceVolume = player != null && Time.timeScale > 0f && !unfocused ? .12f : 0f;
-        ambience.volume = Mathf.MoveTowards(ambience.volume, ambienceVolume, Time.unscaledDeltaTime * .3f);
-        if (ambienceVolume > 0f && !ambience.isPlaying) ambience.Play();
+        ambienceGain = Mathf.MoveTowards(ambienceGain, ambienceVolume, Time.unscaledDeltaTime * .3f);
+        ambience.volume = ambienceGain * GameSettings.Current.effectsVolume;
+        if (ambience.volume > 0f && !ambience.isPlaying) ambience.Play();
         if (ambience.volume <= 0f && ambience.isPlaying) ambience.Stop();
         if (Time.unscaledTime >= nextScan)
         {
@@ -176,7 +184,7 @@ public sealed class GameAudio : MonoBehaviour
         if (mode == LoadSceneMode.Single)
         {
             for (int i = UIChannels; i < voices.Length; i++) { voices[i].source.Stop(); voices[i].paused = false; }
-            ambience.Stop(); ambience.volume = 0;
+            ambience.Stop(); ambience.volume = ambienceGain = 0;
             player = null;
         }
         ScanScene();

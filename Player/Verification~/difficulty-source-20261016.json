@@ -1,0 +1,14 @@
+﻿[
+    {
+        "file":  "Assets/Script/NPC/NPCSpawner.cs",
+        "sha256":  "C7E50DBE578FE4AC827586496B3B63838CAB241C9E7B9E0A1DBF2384CEE452BA"
+    },
+    {
+        "file":  "Assets/Script/Dungeon/TacticalExpedition.cs",
+        "sha256":  "755B2BDFF52A5CEA39FCD83BB0AAE55A94DBA77596B2BDBD0884F2BED5171BD6"
+    },
+    {
+        "file":  "Assets/Player/NPCSpawner.prefab",
+        "sha256":  "866043A2D60E33D26C8FB5AA2CE65A8D578CAF767AD93E9D28C4B6D8C83671B5"
+    }
+]

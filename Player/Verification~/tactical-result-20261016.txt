@@ -1,0 +1,109 @@
+PASS
+PASS Review runs inside Unity Editor Play Mode
+PASS Actual Map1 bootstraps tactical encounters on saved meadow/forest geometry
+PASS Both persistent-data directory and active save path are isolated from user progress
+PASS New run receives its first tactical choice at level two (level=2, choosing=True, kit=True, region=1, timescale=0, players=1)
+PASS First three upgrade cards offer different attack behavior
+PASS Actual upgrade button commits one attack behavior
+PASS Starter course fills all three weapon slots
+PASS Actual Map1 encounter starts: 0
+PASS Real death paths complete encounter and all waves: 0
+PASS First encounter awards usable slide-mark boots
+PASS Actual Map1 encounter starts: 1
+PASS Real death paths complete encounter and all waves: 1
+PASS Second encounter awards echo-range tradeoff pants
+PASS Actual Map1 encounter starts: 2
+PASS Real death paths complete encounter and all waves: 2
+PASS Practice boss death does not trigger main campaign victory
+PASS Grass course guarantees all required first-region keys
+PASS Completed event cannot be replayed for duplicate key rewards
+PASS Actual Map1 encounter starts: 3
+PASS Real death paths complete encounter and all waves: 3
+PASS Forest rescue records merchant consequence and guarantees second-region keys
+PASS Rescued merchant visibly establishes supplies in the next region
+PASS Actual Map1 encounter starts: 4
+PASS Real death paths complete encounter and all waves: 4
+PASS Ancient-tree rescue guarantees boss progression
+PASS Main boss spawns through the real progression manager
+PASS Tree rescue creates visible protection in the final boss arena
+PASS Unbroken altar adds a distinct final-fight danger
+PASS Actual Map1 encounter starts: 5
+PASS Real death paths complete encounter and all waves: 5
+PASS Destroying the altar removes its boss hazard
+PASS Actual save writes safely to the isolated review path
+PASS Saved expedition decodes: 
+PASS Save preserves event choices and tactical attack selection
+PASS Reload restores visible cross-region consequences
+PASS First press pins one echo rather than immediately firing it
+PASS Armed echo has a world position and direction marker
+PASS Armed echo waits for player timing and deals no automatic damage
+PASS Second press triggers the pinned attack after repositioning
+PASS Playback cannot recursively arm a second echo
+PASS Real echo projectile fires from the old position for 45% damage
+PASS Echo hits create neither new recording nor hit-charge feedback
+PASS Second planned ambush arms
+PASS Out-of-range trigger is rejected without spending the pinned echo
+PASS Untriggered echo expires and clears its marker
+PASS Pause freezes planned-echo lifetime
+PASS Teleport clears placed echoes and transient equipment effects
+PASS Frost off-weapon creates a usable setup state
+PASS Hammer consumes frost for a real 150% shatter strike
+PASS Bow consumes shatter exposure for a 175% finishing strike
+PASS Finisher cannot repeatedly reuse an already-consumed exposure
+PASS Three rapid-weapon stacks amplify one echo to 250% of reduced echo damage
+PASS Echo detonation consumes its mark once
+PASS Arcane hit places a visible gathering field
+PASS Fire field deals actual timed damage and leaves a burning setup
+PASS Shield hit on a burning enemy completes team ward sequence
+PASS Off-role direct-damage penalty is preserved while utility is available
+PASS Piercing projectile hits two real colliders in one line
+PASS Ricochet projectile hits a second visible physical target
+PASS Black-iron armor has a readable front/rear damage difference
+PASS Actual boss damage path applies frontal armor
+PASS Recovery opens a real amplified-damage window
+PASS Lethal first-form damage transitions into the second form
+PASS Charge hitting real scenery exposes the second-form boss
+PASS Second form transitions into the third form without skipping phases
+PASS Final-form spell creates three attackable nodes with visible directions
+PASS Destroying physical casting nodes interrupts the final-form spell
+PASS Representative hero initializes selected identity: ranger
+PASS Representative hero receives three usable weapon slots: ranger
+PASS Representative kit exposes its intended sequence: ranger
+PASS Representative hero gets early behavior choice: ranger
+PASS Representative hero initializes selected identity: breaker
+PASS Representative hero receives three usable weapon slots: breaker
+PASS Representative kit exposes its intended sequence: breaker
+PASS Representative hero gets early behavior choice: breaker
+PASS Representative hero initializes selected identity: sentinel
+PASS Representative hero receives three usable weapon slots: sentinel
+PASS Representative kit exposes its intended sequence: sentinel
+PASS Representative hero gets early behavior choice: sentinel
+PASS Split upgrade produces two real projectiles through PlayerShooter.Fire
+PASS Split projectiles cover opposite sides of the aimed direction
+PASS Actual split fire is captured into a planned echo
+PASS Split echo can be manually triggered
+PASS Echo preserves both actual split directions and does not reroll the pattern
+PASS Echo suppresses a muzzle embedded inside a solid obstacle
+PASS Ricochet respects an intervening wall instead of hitting through cover
+PASS Fire-field damage is blocked by real cover
+PASS Sliding past a physical enemy with boots creates one detonatable echo stack
+PASS Ember armor grants a real movement buff when leaving one's own weapon fire field
+PASS Transient equipment bonuses clear cleanly
+PASS Standing in a team ward reduces actual incoming damage by 30%
+PASS Ancient-tree shelter actually blocks boss flame-trail damage
+PASS Client cannot locally arm or execute authoritative echo attacks
+PASS Client cannot award itself encounter progression
+PASS Equipped echo pants extend planning time but shorten activation range
+PASS Watchful helmet grants one consumed strike rather than permanent stacked damage
+PASS Armor behavior and tradeoffs survive inventory serialization
+PASS Support contribution is effective and rate-limited
+PASS Healer can cast team healing in the real skill system
+PASS Nearby wounded teammate receives actual healing
+PASS Effective teammate healing contributes to momentum
+PASS Healing an already-full teammate cannot farm contribution
+PASS Equipment UI has actionable combo instructions
+PASS Tactical echo state round-trips through multiplayer protocol
+PASS Network tactical visual count is bounded
+PASS Remote world markers can be created and cleaned up from snapshots
+PASS Removing the encounter director cleans up its runtime instance without scene-exit errors
+PASS No unexpected game/runtime errors: 

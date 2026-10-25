@@ -1,0 +1,11 @@
+Succeeded
+Platform: StandaloneWindows64
+Options: None
+Size: 261531544
+Time: 00:00:19.0727919
+Errors: 1
+Warnings: 1
+Scenes: Assets/Scenes/Login.unity, Assets/Scenes/MainMenu.unity, Assets/Scenes/Map1.unity
+Validation instrumentation: False
+Host type is not matching any asset type at Path Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveTransparent.shadergraph.
+Access token is empty. Native symbols will not be uploaded for this build. Please make sure you are signed in to the Unity Cloud.

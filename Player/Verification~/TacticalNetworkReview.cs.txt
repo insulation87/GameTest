@@ -1,0 +1,169 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.SceneManagement;
+using Object=UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class TacticalNetworkReview
+{
+    const string Pending="TacticalNetworkReview.Role";
+    static string role;
+    static double next,timeout;
+    static readonly Stack<IEnumerator> steps=new Stack<IEnumerator>();
+    static readonly List<string> results=new List<string>(),errors=new List<string>();
+    static readonly BindingFlags Flags=BindingFlags.Instance|BindingFlags.NonPublic|BindingFlags.Public;
+    static string Out=>Path.GetFullPath(Path.Combine(Application.dataPath,"../.."));
+    static string FileName(string name)=>Path.Combine(Out,"network-"+name+".txt");
+    static TacticalNetworkReview(){EditorApplication.playModeStateChanged+=Changed; SceneManager.sceneLoaded+=Loaded;}
+    public static void RunHost()=>Run("host");
+    public static void RunClient()=>Run("client");
+    static void Run(string value)
+    {
+        if(!Application.isBatchMode || !Path.GetFullPath(Application.dataPath).StartsWith(Path.GetTempPath(),StringComparison.OrdinalIgnoreCase))throw new Exception("Isolated batch project required");
+        PlayerSettings.companyName="CodexIsolatedReview"; PlayerSettings.productName="TacticalNetworkReview-"+value;
+        LoginSceneSetup.PlayFromCurrentScene(); EditorSceneManager.NewScene(NewSceneSetup.EmptyScene,NewSceneMode.Single);
+        SessionState.SetString(Pending,value); EditorApplication.EnterPlaymode();
+    }
+    static void Loaded(Scene scene,LoadSceneMode mode)
+    {
+        if(string.IsNullOrEmpty(role))return;
+        foreach(var actor in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save=actor.GetComponent<GameProgressSave>()??actor.gameObject.AddComponent<GameProgressSave>();
+            save.StoragePath=Path.Combine(Out,"network-"+role+"-save.json");
+        }
+    }
+    static void Changed(PlayModeStateChange state)
+    {
+        if(state!=PlayModeStateChange.EnteredPlayMode)return;
+        role=SessionState.GetString(Pending,""); if(role.Length==0)return; SessionState.SetString(Pending,"");
+        Application.runInBackground=true; results.Clear(); errors.Clear(); steps.Clear(); steps.Push(role=="host"?Host():Client());
+        timeout=EditorApplication.timeSinceStartup+240; next=EditorApplication.timeSinceStartup+.1;
+        Application.logMessageReceived+=Log; EditorApplication.update+=Tick;
+    }
+    static void Log(string message,string stack,LogType type)
+    {
+        if(stack.Contains("UnityEditor.Search") || message.Contains("burst JIT compiler"))return;
+        if(type==LogType.Error || type==LogType.Exception || type==LogType.Assert)errors.Add(message+"\n"+stack);
+    }
+    static void Tick()
+    {
+        if(EditorApplication.timeSinceStartup<next)return;
+        try
+        {
+            if(EditorApplication.timeSinceStartup>timeout)throw new TimeoutException(role+" network review timed out");
+            if(role=="host") foreach(var actor in Object.FindObjectsByType<CoopActor>(FindObjectsSortMode.None))
+                if(actor.Local && actor.GetComponent<PlayerHealth>().IsChoosingUpgrade)actor.GetComponent<PlayerHealth>().SelectCoopUpgrade(0);
+            while(steps.Count>0)
+            {
+                var current=steps.Peek(); if(!current.MoveNext()){steps.Pop();continue;}
+                if(current.Current is IEnumerator nested){steps.Push(nested);continue;}
+                next=EditorApplication.timeSinceStartup+(current.Current is float delay?delay:.05);return;
+            }
+            Check(errors.Count==0,"No unexpected runtime errors: "+string.Join("\n",errors));Finish(0);
+        }
+        catch(Exception ex){results.Add("FAIL "+ex);Finish(1);}
+    }
+    static void Check(bool test,string message){if(!test)throw new Exception(message);results.Add("PASS "+message);File.WriteAllLines(FileName(role+"-live"),results);}
+    static void Finish(int code)
+    {
+        File.WriteAllText(FileName(role+"-result"),(code==0?"PASS":"FAIL")+"\n"+string.Join("\n",results)+"\n"+string.Join("\n",errors));
+        EditorApplication.update-=Tick;Application.logMessageReceived-=Log;CoopSession.Leave();EditorApplication.Exit(code);
+    }
+    static IEnumerator Wait(Func<bool> condition,float seconds=90)
+    {
+        double until=EditorApplication.timeSinceStartup+seconds;
+        while(!condition()){if(EditorApplication.timeSinceStartup>until)throw new TimeoutException(role+" waiting at "+results.LastOrDefault());yield return .05f;}
+    }
+    static CoopActor Local=>Object.FindObjectsByType<CoopActor>(FindObjectsSortMode.None).FirstOrDefault(a=>a.Local);
+    static void Signal(string name)=>File.WriteAllText(FileName(name),"ready");
+    static void SendEcho()
+    {
+        var frame=new CoopInputFrame{pressed=(int)CoopButton.Echo,held=(int)CoopButton.Echo,firstPerson=true,yaw=Local.transform.eulerAngles.y};
+        typeof(CoopSession).GetMethod("Send",Flags).Invoke(CoopSession.Instance,new object[]{0,new CoopPacket{kind="input",input=frame}});
+    }
+    static IEnumerator Host()
+    {
+        Check(CloudAccountService.EnsureInstance().EnterGuest(),"Host enters supported guest mode before opening a LAN room");
+        Check(CoopSession.StartHost("Map1","breaker",0,"tactical",out var error),"Host opens real TCP room: "+error);
+        yield return Wait(()=>CoopSession.Instance.SceneReady && !GameSceneFlow.IsLoading);
+        Check(TacticalExpedition.Instance!=null && TacticalExpedition.Instance.Ready,"Host loads actual Map1 tactical course");
+        foreach(var spawn in Object.FindObjectsByType<NPCSpawner>(FindObjectsSortMode.None))spawn.enabled=false;
+        foreach(var enemy in EnemyHealth.ActiveEnemies.ToArray())Object.Destroy(enemy.gameObject);
+        File.WriteAllText(FileName("port"),CoopSession.Instance.ListeningPort.ToString());
+        yield return Wait(()=>CoopSession.Instance.PlayerCount==2);
+        var remote=Object.FindObjectsByType<CoopActor>(FindObjectsSortMode.None).First(a=>!a.Local);
+        yield return Wait(()=>remote.GetComponent<PlayerHealth>().ExpeditionKitReceived && !remote.GetComponent<PlayerHealth>().IsChoosingUpgrade);
+        Check(remote.GetComponent<PlayerHealth>().ShotStyle!=TacticalShotStyle.None,"Client's early behavior choice is validated by the host");
+        Check(remote.GetComponent<WeaponInventory>().EquippedSlots.All(w=>w!=null),"Remote representative receives a complete three-slot loadout");
+        var tactics=remote.GetComponent<RogueTactics>(); var shooter=remote.GetComponent<PlayerShooter>();
+        typeof(RogueTactics).GetMethod("CheckRoom",Flags).Invoke(tactics,null);
+        tactics.AddResonance(100);
+        tactics.RecordShot(shooter.projectilePrefab,remote.transform.position+Vector3.up+Vector3.forward*2,Vector3.forward,15,100,1,0,0,0,WeaponType.Longbow);
+        Signal("recorded");
+        yield return Wait(()=>tactics.EchoArmed);
+        Check(!tactics.IsReplaying,"Remote input arms an echo on the authoritative host without firing it");
+        Signal("host-armed");
+        yield return Wait(()=>File.Exists(FileName("client-saw-marker")));
+        yield return Wait(()=>!tactics.EchoArmed);
+        Check(Object.FindObjectsByType<Projectile>(FindObjectsSortMode.None).Any(p=>p.IsTacticalEcho),"Second remote input creates real authoritative echo projectiles");
+        Signal("host-fired");
+        TacticalField.Create(TacticalField.Kind.Ward,remote.transform.position,Local.GetComponent<PlayerHealth>(),4,40,0);
+        var armor=TacticalEquipment.Special(ArmorSlot.Helmet,9);remote.GetComponent<WeaponInventory>().AddArmor(armor);remote.GetComponent<WeaponInventory>().EquipArmor(armor);
+        Signal("host-field");
+        yield return Wait(()=>File.Exists(FileName("client-saw-field")));
+        var expedition=TacticalExpedition.Instance; var markers=(TacticalMarker[])typeof(TacticalExpedition).GetField("markers",Flags).GetValue(expedition);
+        var actor=remote.GetComponent<Player>();
+        Check(actor.TryGetTeleportPosition(markers[3].transform.position,Quaternion.identity,out var safe),"Forest event has a safe server teleport target");
+        actor.Teleport(safe,Quaternion.identity);
+        yield return .3f;
+        if(expedition.ActiveEncounter<0)expedition.TryBeginEncounter(3,actor);
+        yield return Wait(()=>expedition.ActiveEncounter==3);
+        foreach(var enemy in expedition.EncounterEnemies.ToArray())if(enemy!=null)enemy.TakeDamage(100000,remote.GetComponent<PlayerHealth>());
+        yield return Wait(()=>expedition.Progress.completed[3]);
+        Check(FloorProgressionManager.Instance.CollectedFor(2)>=20,"Host awards forest progression once through real event deaths");
+        Signal("host-event");
+        yield return Wait(()=>File.Exists(FileName("client-done")));
+    }
+    static IEnumerator Client()
+    {
+        Check(CloudAccountService.EnsureInstance().EnterGuest(),"Client enters supported guest mode before joining a LAN room");
+        yield return Wait(()=>File.Exists(FileName("port")),150);
+        int port=int.Parse(File.ReadAllText(FileName("port")));bool connected=false;string failure=null;
+        CoopSession.Join("Map1","ranger","127.0.0.1",port,"tactical",()=>connected=true,reason=>failure=reason);
+        yield return Wait(()=>failure!=null || connected && CoopSession.Instance.SceneReady && !GameSceneFlow.IsLoading);
+        Check(failure==null && CoopSession.IsClient,"Independent client joins the real TCP room and actual Map1: "+failure);
+        yield return Wait(()=>Local!=null && Local.GetComponent<PlayerHealth>().IsChoosingUpgrade);
+        CoopSession.Upgrade(Local.GetComponent<PlayerHealth>(),0);
+        yield return Wait(()=>!Local.GetComponent<PlayerHealth>().IsChoosingUpgrade);
+        Check(Local.GetComponent<PlayerHealth>().ShotStyle!=TacticalShotStyle.None,"Host-confirmed early attack choice reaches the client");
+        Check(Local.GetComponent<Rigidbody>().isKinematic,"Client keeps authoritative movement disabled");
+        yield return Wait(()=>File.Exists(FileName("recorded")));
+        SendEcho();
+        yield return Wait(()=>File.Exists(FileName("host-armed")));
+        yield return Wait(()=>Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m=>m.name=="隊伍預設回聲"));
+        Check(true,"Client sees the host-created planned-echo location and timer");
+        Signal("client-saw-marker");SendEcho();
+        yield return Wait(()=>File.Exists(FileName("host-fired")));
+        yield return Wait(()=>!Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m=>m.name=="隊伍預設回聲"));
+        Check(true,"Triggering the echo removes its armed marker on the client");
+        yield return Wait(()=>File.Exists(FileName("host-field")));
+        yield return Wait(()=>Local.GetComponent<WeaponInventory>().EquippedArmorSlots.Any(a=>a!=null && a.affix==TacticalAffix.Watchful));
+        Check(Local.GetComponent<TacticalEquipment>().Has(TacticalAffix.Watchful),"Equipped armor behavior survives actual network inventory snapshots");
+        yield return Wait(()=>Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m=>m.name=="隊伍戰術標記" && m.Text.Contains("隊伍盾牆")));
+        Check(true,"Replicated team-ward position, range and remaining time are visible");Signal("client-saw-field");
+        yield return Wait(()=>File.Exists(FileName("host-event")));
+        yield return Wait(()=>TacticalExpedition.Instance!=null && TacticalExpedition.Instance.Progress.completed[3]);
+        Check(FloorProgressionManager.Instance.CollectedFor(2)>=20,"Guaranteed event key rewards reach the client");
+        yield return Wait(()=>Object.FindObjectsByType<TacticalMarker>(FindObjectsSortMode.None).Any(m=>m.name.Contains("補給攤")));
+        Check(TacticalExpedition.Instance.Progress.merchantRescued,"Cross-region merchant consequence reaches the independent client");
+        Signal("client-done");yield return .3f;
+    }
+}

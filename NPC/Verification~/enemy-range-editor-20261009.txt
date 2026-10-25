@@ -1,0 +1,22 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Actual saved outdoor Map1 loads for enemy detection review
+The actual NPC prefab used by Map1 has a serialized 200-unit pursuit range
+Actual Map1 NPC spawner creates an enemy from the updated prefab
+Actual meadow region boundary is available
+Saved meadow navigation provides targets beyond the old 100-unit range and outside 200 units
+Generated enemy warps to real meadow navigation
+Safe player placement at (151.00, 0.08, 128.80)
+Old 100-unit setting does not pursue the distant meadow player
+Longer pursuit follows a complete path inside the meadow region
+Safe player placement at (231.00, 0.08, 128.80)
+A player farther than 200 units remains outside the detection range
+Enemy boundary test starts on valid meadow navigation
+Neighbouring forest has a valid player destination
+Safe player placement at (391.00, 0.08, 128.80)
+Forest player is in detection radius but outside this enemy's home region
+Expanded detection does not let enemies chase across region boundaries
+Melee and crossbow attack distances retain their current settings
+No unexpected Unity gameplay errors: 

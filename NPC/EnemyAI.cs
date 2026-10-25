@@ -6,7 +6,8 @@ using UnityEngine.AI;
 public class EnemyAI : MonoBehaviour
 {
     public Transform target;
-    public float chaseRange = 100f;
+    [Min(0f), Tooltip("Maximum distance at which this enemy can pursue a living player in its region.")]
+    public float chaseRange = 200f;
     public float stopRange = 1.5f;
     [Min(0.05f)] public float damageInterval = 1f;
     [Min(0.1f)] public float rangedInterval = 1.8f;
@@ -27,10 +28,19 @@ public class EnemyAI : MonoBehaviour
     private float nextPathTime;
     public DungeonRoomBoundary HomeRoom => homeRoom;
     public int CombatLevel { get; private set; } = 1;
-    public float AttackDamage => EnemyCombatRules.DamageAtLevel(CombatLevel);
+    public float AttackDamage => EnemyCombatRules.DamageAtLevel(CombatLevel) * ExpeditionMaps.Current.Damage;
     public bool CanUseRanged => EnemyCombatRules.AllowsRanged(CombatLevel);
     public bool IsAttacking => attackRoutine != null;
     public bool CombatPaused { get; private set; }
+    float frozenUntil;
+    public bool IsFrozen => Time.time < frozenUntil;
+    public void FreezeFor(float seconds)
+    {
+        frozenUntil = Mathf.Max(frozenUntil, Time.time + Mathf.Clamp(seconds,0f,3f));
+        if (attackRoutine != null) StopCoroutine(attackRoutine);
+        attackRoutine = null;
+        StopMoving();
+    }
     public void SetCombatPaused(bool paused)
     {
         if (CombatPaused == paused) return;
@@ -54,9 +64,11 @@ public class EnemyAI : MonoBehaviour
     }
     void Update()
     {
+        if (CoopSession.IsClient) return;
+        if (CoopSession.IsMultiplayer) target = CoopSession.ClosestLiving(transform.position, target, homeRoom);
         if (health != null && health.EnemyLevel != CombatLevel) ConfigureLevel(health.EnemyLevel);
         if (!CanNavigate()) return;
-        if (CombatPaused) { StopMoving(); return; }
+        if (CombatPaused || IsFrozen) { StopMoving(); return; }
         if (target == null || homeRoom == null || (health != null && health.IsDead)) { StopMoving(); return; }
         PlayerHealth victim = target.GetComponentInParent<PlayerHealth>();
         float distance = Vector3.Distance(transform.position, target.position);
@@ -76,6 +88,12 @@ public class EnemyAI : MonoBehaviour
 
     public void AssignRoom(DungeonRoomBoundary room)
     {
+        var world = FindFirstObjectByType<OverworldDirector>();
+        if (world != null)
+        {
+            var region = world.EnemyBoundaryAt(transform.position);
+            if (region != null) room = region;
+        }
         homeRoom = room;
         if (roomPath == null) roomPath = new NavMeshPath();
         if (agent == null) agent = GetComponent<NavMeshAgent>();
@@ -157,7 +175,7 @@ public class EnemyAI : MonoBehaviour
     }
     void TryBeginAttack(PlayerHealth victim, bool ranged)
     {
-        if (!initialized || CombatPaused || IsAttacking || Time.time < nextAttackTime || victim == null || victim.IsDead || (health != null && health.IsDead)) return;
+        if (!initialized || CombatPaused || IsFrozen || IsAttacking || Time.time < nextAttackTime || victim == null || victim.IsDead || (health != null && health.IsDead)) return;
         LastAttackWasRanged = ranged;
         GameAudio.At(ranged ? GameSound.Crossbow : GameSound.Sword, transform.position);
         nextAttackTime = Time.time + Mathf.Max(attackWindup + 0.15f, ranged ? rangedInterval : damageInterval);
@@ -187,7 +205,7 @@ public class EnemyAI : MonoBehaviour
         if (victim != null && Vector3.Distance(transform.position, victim.transform.position) <= stopRange + 0.2f && HasLineOfSight(victim, AttackOrigin))
             TryBeginAttack(victim, false);
     }
-    void OnDisable() { if (attackRoutine != null) StopCoroutine(attackRoutine); attackRoutine = null; }
+    void OnDisable() { if (attackRoutine != null) StopCoroutine(attackRoutine); attackRoutine = null; frozenUntil = 0f; }
     void OnValidate()
     {
         chaseRange = Mathf.Max(0f, chaseRange); stopRange = Mathf.Clamp(stopRange, 0.1f, Mathf.Max(0.1f, chaseRange));

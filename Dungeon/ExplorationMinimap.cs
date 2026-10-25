@@ -2,7 +2,7 @@ using UnityEngine;
 using UnityEngine.UI;
 using MedievalDungeonKit;
 
-public class ExplorationMinimap : MonoBehaviour
+public partial class ExplorationMinimap : MonoBehaviour
 {
     [Header("Display")]
     [Min(128)] public int textureSize = 512;
@@ -35,6 +35,7 @@ public class ExplorationMinimap : MonoBehaviour
 
     void Awake()
     {
+        OverworldDirector.EnsureWorld();
         player = FindFirstObjectByType<Player>();
         dungeon = FindFirstObjectByType<DungeonViewSettings>();
         if (player == null || dungeon == null)
@@ -60,10 +61,17 @@ public class ExplorationMinimap : MonoBehaviour
 
         RevealAroundPlayer();
         UpdatePlayerMarker();
+        UpdateObjectiveMarker();
     }
 
     void CalculateFloorBounds()
     {
+        var world = FindFirstObjectByType<OverworldDirector>();
+        if (world != null)
+        {
+            for (int i = 0; i < 3; i++) { floorBounds[i] = world.RegionBounds[i]; floorHeights[i] = floorBounds[i].center.y; }
+            return;
+        }
         GameObject[] levels = { dungeon.level1, dungeon.level2, dungeon.level3 };
         for (int floorIndex = 0; floorIndex < levels.Length; floorIndex++)
         {
@@ -110,7 +118,7 @@ public class ExplorationMinimap : MonoBehaviour
         mapCamera.clearFlags = CameraClearFlags.SolidColor;
         mapCamera.backgroundColor = new Color(0.035f, 0.055f, 0.065f, 1f);
         mapCamera.nearClipPlane = 0.1f;
-        mapCamera.farClipPlane = 11f;
+        mapCamera.farClipPlane = 35f;
         mapCamera.depth = -10f;
 
         mapTexture = new RenderTexture(textureSize, textureSize, 16, RenderTextureFormat.ARGB32);
@@ -135,6 +143,8 @@ public class ExplorationMinimap : MonoBehaviour
         frameRect.pivot = new Vector2(1f, 1f);
         frameRect.anchoredPosition = new Vector2(-20f, -20f);
         frameRect.sizeDelta = new Vector2(uiSize + 12f, uiSize + 38f);
+        GameUITheme.Surface(frame);
+        GameUITheme.FitCanvas(canvasObject.GetComponent<CanvasScaler>());
 
         GameObject rawObject = new GameObject("Map", typeof(RectTransform), typeof(RawImage));
         mapRect = rawObject.GetComponent<RectTransform>();
@@ -196,7 +206,7 @@ public class ExplorationMinimap : MonoBehaviour
         floorLabel.fontSize = 18;
         floorLabel.fontStyle = FontStyle.Bold;
         floorLabel.alignment = TextAnchor.MiddleCenter;
-        floorLabel.color = Color.white;
+        floorLabel.color = GameUITheme.Gold;
         floorLabel.raycastTarget = false;
     }
 
@@ -207,7 +217,7 @@ public class ExplorationMinimap : MonoBehaviour
         float halfSize = Mathf.Max(bounds.extents.x, bounds.extents.z);
         mapCamera.orthographicSize = halfSize;
         mapCamera.transform.SetPositionAndRotation(
-            new Vector3(bounds.center.x, floorHeights[currentFloor] + 9f, bounds.center.z),
+            new Vector3(bounds.center.x, floorHeights[currentFloor] + 20f, bounds.center.z),
             Quaternion.Euler(90f, 0f, 0f));
 
         for (int floorIndex = 0; floorIndex < fogTiles.Length; floorIndex++)
@@ -216,11 +226,13 @@ public class ExplorationMinimap : MonoBehaviour
 
         Text label = GetComponentInChildren<Text>();
         if (label != null)
-            label.text = $"第 {currentFloor + 1} 層";
+            label.text = FindFirstObjectByType<OverworldDirector>() != null ? $"第 {currentFloor + 1}/3 關 · " + OverworldDirector.RegionNames[currentFloor] : $"第 {currentFloor + 1} 層";
     }
 
     int GetClosestFloor()
     {
+        var world = FindFirstObjectByType<OverworldDirector>();
+        if (world != null) return world.RegionAt(player.transform.position) - 1;
         int closestFloorIndex = 0;
         float closestDistance = Mathf.Abs(player.transform.position.y - floorHeights[0]);
         for (int floorIndex = 1; floorIndex < floorHeights.Length; floorIndex++)

@@ -40,6 +40,8 @@ public class CameraFollowTPS : MonoBehaviour
 
     void OnEnable()
     {
+        GameSettings.Changed += ApplyCameraSettings;
+        ApplyCameraSettings();
         if (target != null)
             yaw = target.eulerAngles.y;
 
@@ -50,7 +52,7 @@ public class CameraFollowTPS : MonoBehaviour
     {
         if (target == null) return;
 
-        float mouseX = Input.GetAxis("Mouse X") * mouseSensitivity * Time.deltaTime;
+        float mouseX = CoopInput.Look(this, mouseSensitivity).x;
         yaw += mouseX;
 
         Quaternion camRotation = Quaternion.Euler(pitch, yaw, 0f);
@@ -58,6 +60,7 @@ public class CameraFollowTPS : MonoBehaviour
         Vector3 targetCenter = target.position + Vector3.up * (1.2f + GetStanceHeightOffset());
         Vector3 wantedPos = targetCenter + camRotation * new Vector3(0f, 0f, -distance);
         wantedPos.y = target.position.y + height;
+        wantedPos = CameraCollision.Resolve(target,targetCenter,wantedPos,GetComponentInChildren<Camera>(true));
 
         // Existing scenes may have serialized the old value as zero.
         float effectiveSmoothTime = smoothTime > 0f ? smoothTime : 0.12f;
@@ -67,6 +70,7 @@ public class CameraFollowTPS : MonoBehaviour
             ref currentVelocity,
             effectiveSmoothTime
         );
+        transform.position = CameraCollision.Resolve(target,targetCenter,transform.position,GetComponentInChildren<Camera>(true));
 
         Quaternion lookRot = Quaternion.LookRotation(targetCenter - transform.position);
         transform.rotation = Quaternion.Slerp(
@@ -93,6 +97,14 @@ public class CameraFollowTPS : MonoBehaviour
         SnapToTarget();
     }
 
+    void ApplyCameraSettings()
+    {
+        Camera view = GetComponentInChildren<Camera>(true);
+        if (view != null && !view.orthographic) view.fieldOfView = GameSettings.Current.fieldOfView;
+    }
+
+    void OnDisable() => GameSettings.Changed -= ApplyCameraSettings;
+
     void OnValidate()
     {
         distance = Mathf.Max(0.1f, distance);
@@ -110,6 +122,7 @@ public class CameraFollowTPS : MonoBehaviour
 
         Vector3 wantedPos = targetCenter + camRotation * new Vector3(0f, 0f, -distance);
         wantedPos.y = target.position.y + height;
+        wantedPos = CameraCollision.Resolve(target,targetCenter,wantedPos,GetComponentInChildren<Camera>(true));
 
         transform.position = wantedPos;
         transform.rotation = Quaternion.LookRotation(targetCenter - transform.position);

@@ -1,0 +1,42 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Actual Map1 starts in local two-player mode
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+Both local actors receive independent half-screen viewports
+Actual cameras present the two separate viewports
+Gamepad moves only the second player on outdoor terrain
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 1 pickup is collected by actor Player
+The same pickup cannot count twice
+Both players contribute to the shared region 1 objective
+Second-player portal travel does not move player one
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Player
+The same pickup cannot count twice
+Real region 2 pickup is collected by actor Coop Player 2
+The same pickup cannot count twice
+Both players contribute to the shared region 2 objective
+Second-player portal travel does not move player one
+Both split-screen players reach safe ancient forest ground
+Gameplay camera produces a live render target
+Offscreen gameplay rendering fills the camera target with visible scene content
+Gameplay camera produces a live render target
+Offscreen gameplay rendering fills the camera target with visible scene content
+Only the primary actor owns the separate cooperative save
+No unexpected Unity gameplay errors: 

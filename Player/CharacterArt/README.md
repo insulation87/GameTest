@@ -1,5 +1,10 @@
 # Blonde anime girl
 
+The default in-game appearance now comes from `PixelArt/PixelCharacterFactory.cs`:
+ten selectable voxel adventurers with stepped animation, role-specific palettes,
+headgear and matching first-person sleeve colors. See `../Characters.md` for skills.
+The VRoid assets and rebuild workflow below remain available as legacy art sources.
+
 The active character uses a full rigged VRoid mesh with natural anime proportions.
 The original head and limb proportions are preserved; the model is scaled uniformly
 to fit the existing two-unit player collider. It is not assembled from primitives.

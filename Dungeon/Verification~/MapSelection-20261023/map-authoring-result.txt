@@ -1,0 +1,1 @@
+PASS: three separate themed scenes, three regions per map, persistent meshes/materials/navigation.

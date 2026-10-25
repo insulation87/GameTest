@@ -46,6 +46,7 @@ public class BossController : MonoBehaviour
             initialized = true;
         }
         ApplyCombatForm();
+        if (GetComponent<TacticalBossMechanics>() == null) gameObject.AddComponent<TacticalBossMechanics>();
     }
 
     void Awake()
@@ -56,9 +57,16 @@ public class BossController : MonoBehaviour
 
     void Update()
     {
+        if (CoopSession.IsClient) return;
+        if (CoopSession.IsMultiplayer)
+        {
+            Transform closest = CoopSession.ClosestLiving(transform.position, null, enemyAI != null ? enemyAI.HomeRoom : null);
+            if (closest != null) player = closest.GetComponent<Player>();
+        }
         if (!initialized || health == null || health.IsDead) return;
-        if (enemyAI != null) enemyAI.SetCombatPaused(IsTransforming);
-        if (IsTransforming || Time.timeScale <= 0f || Phase == 1 || Time.time < nextBurstTime) return;
+        var tactics = GetComponent<TacticalBossMechanics>();
+        if (enemyAI != null) enemyAI.SetCombatPaused(IsTransforming || tactics != null && tactics.ControlsAI);
+        if (IsTransforming || tactics != null && tactics.ControlsAI || (enemyAI != null && enemyAI.IsFrozen) || Time.timeScale <= 0f || Phase == 1 || Time.time < nextBurstTime) return;
         if (player == null) player = FindFirstObjectByType<Player>();
         PlayerHealth victim = player != null ? player.GetComponent<PlayerHealth>() : null;
         if (victim == null || victim.IsDead) return;
@@ -84,6 +92,15 @@ public class BossController : MonoBehaviour
         return true;
     }
 
+    public void RestoreProgress(int phase)
+    {
+        Phase = Mathf.Clamp(phase, 1, PhaseCount);
+        transformationEndsAt = Time.time + transformationDuration;
+        nextBurstTime = transformationEndsAt + 1f;
+        ApplyCombatForm();
+        PhaseChanged?.Invoke();
+    }
+
     void ApplyCombatForm()
     {
         if (agent != null) agent.speed = baseSpeed * (Phase == 1 ? 1f : Phase == 2 ? 1.1f : 1.2f);
@@ -101,7 +118,7 @@ public class BossController : MonoBehaviour
         BurstFired?.Invoke();
         Vector3 origin = enemyAI != null ? enemyAI.AttackOrigin : transform.position + Vector3.up * 0.4f;
         int count = Mathf.Max(1, bulletsPerBurst) + (Phase == 3 ? 12 : 0);
-        float levelDamage = EnemyCombatRules.DamageAtLevel(health != null ? health.EnemyLevel : 100);
+        float levelDamage = EnemyCombatRules.DamageAtLevel(health != null ? health.EnemyLevel : 100) * ExpeditionMaps.Current.Damage;
         for (int bulletIndex = 0; bulletIndex < count; bulletIndex++)
         {
             float angle = burstRotation + bulletIndex * (360f / count);

@@ -1,0 +1,13 @@
+PASS
+PASS Host enters supported guest mode before opening a LAN room
+PASS Host opens real TCP room: 
+PASS Host loads actual Map1 tactical course
+PASS Host has one local actor with a full-screen viewport after a remote peer joins
+PASS Removed local mode cannot replace or interrupt an active network room
+PASS Client's early behavior choice is validated by the host
+PASS Remote representative receives a complete three-slot loadout
+PASS Remote input arms an echo on the authoritative host without firing it
+PASS Second remote input creates real authoritative echo projectiles
+PASS Forest event has a safe server teleport target
+PASS Host awards forest progression once through real event deaths
+PASS No unexpected runtime errors: 

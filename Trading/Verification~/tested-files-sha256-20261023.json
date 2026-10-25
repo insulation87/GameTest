@@ -1,0 +1,62 @@
+﻿[
+    {
+        "Path":  "Assets/Script/MainMenu/MainMenuController.cs",
+        "SHA256":  "919AEF3E39CFC4AA998C8D6DC79DE5F558C3FECECD79849E17CB462A8BDFF585"
+    },
+    {
+        "Path":  "Assets/Script/MainMenu/GameSceneFlow.cs",
+        "SHA256":  "1CE9830C57D0D8E0ECA4B75F540F46638916BB29EECBD9F28F23A8FA0B5636DD"
+    },
+    {
+        "Path":  "Assets/Script/MainMenu/CharacterSelectionMenu.cs",
+        "SHA256":  "7FF23141D52863E0470719D6E6C50C011E649A87A7B59CFE7C4311E3E89EF8E9"
+    },
+    {
+        "Path":  "Assets/Script/Player/GameProgressState.cs",
+        "SHA256":  "E8247466D2303388BDA5895B1AF7B1C6535B90615959D5EBC2C15837667E7CE5"
+    },
+    {
+        "Path":  "Assets/Script/Player/GameProgressSave.cs",
+        "SHA256":  "B98D122BEA80C105FD7A24F7028E35A0AC2AEB2C153C60AB7565A7F6055BF83A"
+    },
+    {
+        "Path":  "Assets/Script/Player/PlayerShooter.cs",
+        "SHA256":  "E520F46C7A9B55806BEBA4A0B5BA83BA4094F94B18E5F062CFB9B56F1CBF4914"
+    },
+    {
+        "Path":  "Assets/Script/UI/GameLoadingScreen.cs",
+        "SHA256":  "AA8CA69520E71ABB5195618954F7E95DCD5471F4AD8391C6D229729C11EDE85D"
+    },
+    {
+        "Path":  "Assets/Script/UI/DungeonVictoryUI.cs",
+        "SHA256":  "432ACAFCDCCAEA61D75C218B4EDEA700CDE3F93C83AD182BBF6838FE3ABBF364"
+    },
+    {
+        "Path":  "Assets/Script/Trading/TradingHubController.cs",
+        "SHA256":  "8B7675FD2844DDE0B9B95438E3F57D478BBA2CB642DB767E89FA376D33666A49"
+    },
+    {
+        "Path":  "Assets/Script/Trading/TradingHubStock.cs",
+        "SHA256":  "2D166A70E7AD670307169A14DB7156D664B3D61625F17BBEDBAF28B02C973C11"
+    },
+    {
+        "Path":  "Assets/Script/Trading/TradingHubWorld.cs",
+        "SHA256":  "91BA98E4ACD9CFB5EF6D6521286087FF2D465BAD125C1DB9F167AD338D425965"
+    },
+    {
+        "Path":  "Assets/Script/Trading/WeaponShopProgress.cs",
+        "SHA256":  "10A4409FE02981E65162D40F52DE0A112656CE8E66482327F0B08E1F0585E0C5"
+    },
+    {
+        "Path":  "Assets/Script/Trading/Editor/TradingHubReview.cs",
+        "SHA256":  "4FC8FC3D447A81B2B8F0729958376D6FBDCD10F299F33C7FDF553B26E2909485"
+    },
+    {
+        "Path":  "Assets/Scenes/TradingHub.unity",
+        "SHA256":  "A5CE79BD29332DC4A456C0E9A3A2C2CAD8649472019BA8BABA10EB8C8E30C681"
+    },
+    {
+        "Path":  "ProjectSettings/EditorBuildSettings.asset",
+        "SHA256":  "6730ECE266B6C5A8DD9736E464D4E1BACEB3C156213A8028D60E8B7CD3585F6F"
+    }
+]

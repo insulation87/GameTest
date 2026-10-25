@@ -1,0 +1,250 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
+using UnityEditor;
+using UnityEditor.SceneManagement;
+using UnityEngine;
+using UnityEngine.AI;
+using UnityEngine.UI;
+using Object = UnityEngine.Object;
+
+[InitializeOnLoad]
+public static class FirstFloorKeyOnlyReview
+{
+    const string Pending = "FirstFloorKeyOnlyReview.Pending";
+    const BindingFlags Flags = BindingFlags.Instance | BindingFlags.Public | BindingFlags.NonPublic;
+    static readonly List<string> results = new List<string>(), errors = new List<string>();
+    static readonly Stack<IEnumerator> steps = new Stack<IEnumerator>();
+    static double next, deadline;
+    static string Out => Path.GetFullPath(Path.Combine(Application.dataPath,"../.."));
+    static Player player;
+    static PlayerHealth health;
+    static PlayerShooter shooter;
+    static WeaponInventory inventory;
+    static RogueTactics tactics;
+    static Camera camera;
+    static Projectile prefab;
+    static Vector3 arena = new Vector3(10000,0,10000);
+    static DungeonRoomBoundary boundary;
+    static FirstFloorKeyOnlyReview() { EditorApplication.playModeStateChanged += Changed; }
+    public static void Run()
+    {
+        if (!Application.isBatchMode || !Path.GetFullPath(Application.dataPath).StartsWith(Path.GetTempPath(),StringComparison.OrdinalIgnoreCase))
+            throw new Exception("Temporary batch copy required.");
+        PlayerSettings.companyName="CodexIsolatedReview";
+        PlayerSettings.productName="FirstFloorKeyOnlyReview-"+new DirectoryInfo(Out).Name;
+        LoginSceneSetup.PlayFromCurrentScene();
+        EditorSceneManager.OpenScene("Assets/Scenes/Map1.unity",OpenSceneMode.Single);
+        foreach (var player in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save = player.GetComponent<GameProgressSave>() ?? player.gameObject.AddComponent<GameProgressSave>();
+            save.enabled = false;
+        }
+        foreach (var spawner in Object.FindObjectsByType<NPCSpawner>(FindObjectsSortMode.None)) spawner.enabled = false;
+        SessionState.SetBool(Pending,true); EditorApplication.EnterPlaymode();
+    }
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void IsolateSaves()
+    {
+        if (!Application.isBatchMode || !SessionState.GetBool(Pending,false)) return;
+        string path=Path.Combine(Out,"isolated-progress.json");
+        foreach(var suffix in new[]{"",".bak",".tmp"}) if(File.Exists(path+suffix)) File.Delete(path+suffix);
+        GameProgressSave.StartFresh=true;
+        foreach(var actor in Object.FindObjectsByType<Player>(FindObjectsSortMode.None))
+        {
+            var save=actor.GetComponent<GameProgressSave>();
+            save.StoragePath=path; save.enabled=true;
+        }
+    }
+    static void Changed(PlayModeStateChange state)
+    {
+        if (state != PlayModeStateChange.EnteredPlayMode || !SessionState.GetBool(Pending,false)) return;
+        SessionState.SetBool(Pending,false); results.Clear(); errors.Clear(); steps.Clear(); steps.Push(Checks());
+        next = EditorApplication.timeSinceStartup + .3; deadline = EditorApplication.timeSinceStartup + 360;
+        Application.logMessageReceived += Log; EditorApplication.update += Tick;
+    }
+    static void Log(string text,string stack,LogType type)
+    {
+        if (stack.Contains("UnityEditor.Search") || text.Contains("burst JIT compiler")) return;
+        if (type == LogType.Error || type == LogType.Exception || type == LogType.Assert) errors.Add(text + "\n" + stack);
+    }
+    static void Tick()
+    {
+        if (EditorApplication.timeSinceStartup < next) return;
+        try
+        {
+            if (EditorApplication.timeSinceStartup > deadline) throw new TimeoutException("Play Mode review timeout");
+            while (steps.Count > 0)
+            {
+                var step = steps.Peek();
+                if (!step.MoveNext()) { steps.Pop(); continue; }
+                if (step.Current is IEnumerator nested) { steps.Push(nested); continue; }
+                next = EditorApplication.timeSinceStartup + (step.Current is float seconds ? seconds : .05); return;
+            }
+            Check(errors.Count == 0,"No unexpected game/runtime errors: " + string.Join("\n",errors)); Finish(0);
+        }
+        catch (Exception ex) { results.Add("FAIL " + ex); Finish(1); }
+    }
+    static void Finish(int code)
+    {
+        File.WriteAllText(Path.Combine(Out,"key-only-result.txt"),(code == 0 ? "PASS" : "FAIL") + "\n" + string.Join("\n",results) + "\n" + string.Join("\n",errors));
+        Application.logMessageReceived -= Log; EditorApplication.update -= Tick; EditorApplication.Exit(code);
+    }
+    static void Check(bool value,string message) { if (!value) throw new Exception(message); results.Add("PASS " + message); File.WriteAllLines(Path.Combine(Out,"key-only-live.txt"),results); }
+    static object Get(object target,string field) => target.GetType().GetField(field,Flags).GetValue(target);
+    static void Set(object target,string field,object value) => target.GetType().GetField(field,Flags).SetValue(target,value);
+    static object Call(object target,string method,params object[] args) => target.GetType().GetMethod(method,Flags).Invoke(target,args);
+    static void CloseUpgrade()
+    {
+        int guard = 0; while (health.IsChoosingUpgrade && guard++ < 24) health.SelectCoopUpgrade(0);
+        Time.timeScale = 1;
+    }
+    static void Move(Vector3 ground)
+    {
+        if (!player.TryGetTeleportPosition(ground,Quaternion.identity,out var pose)) throw new Exception("Unsafe test teleport: " + ground);
+        player.Teleport(pose,Quaternion.identity); Physics.SyncTransforms();
+    }
+    static IEnumerator KillEncounter(TacticalExpedition expedition,int id)
+    {
+        var markers = (TacticalMarker[])Get(expedition,"markers");
+        Move(markers[id].transform.position);
+        yield return .3f; CloseUpgrade();
+        if (expedition.ActiveEncounter < 0) expedition.TryBeginEncounter(id,player);
+        Check(expedition.ActiveEncounter == id,"Actual Map1 encounter starts: " + id);
+        for (int iteration = 0; iteration < 30 && !expedition.Progress.completed[id]; iteration++)
+        {
+            foreach (var enemy in expedition.EncounterEnemies.ToArray())
+            {
+                if (enemy == null || enemy.IsDead) continue;
+                var boss = enemy.GetComponent<BossController>();
+                if (boss != null && boss.IsTransforming) continue;
+                enemy.TakeDamage(100000,health,enemy.transform.position - enemy.transform.forward*3);
+            }
+            Set(expedition,"nextWave",Time.time - 1);
+            yield return id == 2 ? 1f : .25f; CloseUpgrade();
+        }
+        Check(expedition.Progress.completed[id],"Real death paths complete encounter and all waves: " + id);
+    }
+    static void ClearLoot()
+    {
+        foreach (var item in Object.FindObjectsByType<MonoBehaviour>(FindObjectsSortMode.None))
+            if (item is IMagneticPickup) Object.DestroyImmediate(item.gameObject);
+    }
+    static void AssertOnlyKeys(string context)
+    {
+        Check(Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length == 0 &&
+            Object.FindObjectsByType<ArmorPickup>(FindObjectsSortMode.None).Length == 0 &&
+            Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None).Length == 0 &&
+            Object.FindObjectsByType<ExperiencePickup>(FindObjectsSortMode.None).Length == 0,context);
+    }
+    static EnemyHealth Kill(int floor, PlayerHealth source, float keyChance = 1)
+    {
+        var node=Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/NPC/Enemy.prefab"),player.transform.position+Vector3.right*50,Quaternion.identity);
+        foreach(var behaviour in node.GetComponents<MonoBehaviour>()) if(!(behaviour is EnemyHealth)) behaviour.enabled=false;
+        var enemy=node.GetComponent<EnemyHealth>();
+        enemy.SetDungeonFloor(floor); enemy.SetLevelAndExperience(1,7); enemy.showDamageNumbers=false;
+        enemy.weakNpcWeaponDropChance=enemy.strongNpcWeaponDropChance=enemy.armorEquipmentDropChance=enemy.healthDropChance=1;
+        enemy.progressionDropChance=keyChance;
+        enemy.TakeDamage(100000,source);
+        Check(enemy.IsDead,"Actual production prefab lethal-damage path, floor " + floor);
+        return enemy;
+    }
+    static IEnumerator Checks()
+    {
+        yield return 1f;
+        Check(Application.isPlaying,"Checks run inside actual Unity Editor Play Mode");
+        player=Object.FindFirstObjectByType<Player>(); health=player.GetComponent<PlayerHealth>(); inventory=player.GetComponent<WeaponInventory>();
+        Check(Application.companyName=="CodexIsolatedReview" && (string)Get(player.GetComponent<GameProgressSave>(),"sessionPath")==Path.Combine(Out,"isolated-progress.json"),"Persistent directory and active save are isolated from user progress");
+        var expedition=TacticalExpedition.Instance;
+        Check(expedition!=null && expedition.Ready,"Actual Map1 initializes tactical encounters");
+        Check(health.CurrentLevel==2 && health.IsChoosingUpgrade,"First tactical level-up remains available without equipment gifts");
+        CloseUpgrade(); Set(health,"invincibleUntil",Time.time+300);
+        Check(inventory.Weapons.Count==1 && inventory.EquippedSlots.Count(item=>item!=null)==1,"New run retains only its character starting weapon");
+        Check(inventory.Armors.Count==0,"First-region starter grants no armor");
+        var owned=CharacterWeapons.Create(WeaponType.FrostStaff,12,.8f); inventory.AddWeapon(owned); inventory.EquipToSlot(owned,1);
+        var armor=TacticalEquipment.Special(ArmorSlot.Shoes,10); inventory.AddArmor(armor); inventory.EquipArmor(armor);
+        string ownedState=JsonUtility.ToJson(inventory.CaptureProgress());
+        health.ExpeditionKitReceived=false; expedition.GrantStarterKit(player); expedition.GrantStarterKit(player);
+        Check(JsonUtility.ToJson(inventory.CaptureProgress())==ownedState,"Returning player keeps all owned and equipped items; starter grants add none");
+        int weaponCount=inventory.Weapons.Count, armorCount=inventory.Armors.Count, gold=inventory.Gold;
+        for(int id=0;id<3;id++)
+        {
+            ClearLoot(); yield return KillEncounter(expedition,id);
+            AssertOnlyKeys("First-region encounter " + id + " produces no weapon, armor, health or XP pickups");
+            Check(inventory.Weapons.Count==weaponCount && inventory.Armors.Count==armorCount && inventory.Gold==gold,"Encounter " + id + " grants keys without extra equipment or gold");
+        }
+        Check(FloorProgressionManager.Instance.IsComplete(1),"First-region guaranteed keys still unlock the second region");
+        Check(!DungeonVictoryUI.IsOpen,"First-region trial boss remains a practice encounter");
+        int keys=FloorProgressionManager.Instance.CollectedFor(1);
+        Check(!expedition.TryBeginEncounter(0,player) && FloorProgressionManager.Instance.CollectedFor(1)==keys,"Completed encounters cannot duplicate their key rewards");
+        expedition.enabled=false;
+        foreach(var enemy in EnemyHealth.ActiveEnemies.ToArray()) if(enemy!=null) Object.DestroyImmediate(enemy.gameObject);
+        ClearLoot(); Set(health,"currentExperience",0); int xp=health.CurrentExperience;
+        Kill(1,health);
+        AssertOnlyKeys("First-floor death suppresses all other pickups even with every drop chance forced to 100%");
+        Check(Object.FindObjectsByType<FloorKeyPickup>(FindObjectsSortMode.None).Length==1,"First-floor death retains the keystone drop");
+        Check(health.CurrentExperience==xp+7,$"First-floor XP goes directly to the killer once (before={xp}, after={health.CurrentExperience}, level={health.CurrentLevel})");
+        var key=Object.FindFirstObjectByType<FloorKeyPickup>();
+        Check(key.TryCollect(player.GetComponent<Collider>()) && FloorProgressionManager.Instance.CollectedFor(1)==keys+1,"Actual first-floor keystone can still be collected");
+        yield return .1f; ClearLoot(); xp=health.CurrentExperience;
+        Kill(1,null,0);
+        AssertOnlyKeys("Environmental first-floor death leaves no other pickups");
+        Check(health.CurrentExperience==xp+7,"Environmental kill XP goes directly to the nearest living player");
+        Check(Object.FindObjectsByType<FloorKeyPickup>(FindObjectsSortMode.None).Length==0,"A failed key roll does not create a replacement item");
+        yield return .1f; ClearLoot();
+        for(int floor=2;floor<=3;floor++)
+        {
+            xp=health.CurrentExperience; Kill(floor,health);
+            Check(Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1 && Object.FindObjectsByType<ArmorPickup>(FindObjectsSortMode.None).Length==1 &&
+                Object.FindObjectsByType<HealthPickup>(FindObjectsSortMode.None).Length==1 && Object.FindObjectsByType<ExperiencePickup>(FindObjectsSortMode.None).Length==1 &&
+                Object.FindObjectsByType<FloorKeyPickup>(FindObjectsSortMode.None).Length==1,"Floor " + floor + " retains every original loot category");
+            Check(health.CurrentExperience==xp,"Later-floor experience still requires pickup");
+            Check(Object.FindFirstObjectByType<ExperiencePickup>().TryCollect(player.GetComponent<Collider>()) && health.CurrentExperience==xp+7,"Later-floor experience pickup remains usable");
+            yield return .1f; ClearLoot();
+        }
+        yield return ChestChecks();
+        var save=player.GetComponent<GameProgressSave>();
+        Check(save.SaveNow(),"Updated progression saves to isolated file");
+        Check(GameProgressSave.TryRead(Path.Combine(Out,"isolated-progress.json"),out var saved,out var error),"Isolated save can be read: " + error);
+        Check(saved.inventory.weapons.Length==weaponCount && saved.inventory.armorItems.Length==armorCount && saved.floorKeys[1]>=10,"Saved inventory and first-region progression remain intact");
+    }
+    static IEnumerator ChestChecks()
+    {
+        var director=Object.FindFirstObjectByType<TreasureChestDirector>(); director.enabled=false; director.RefreshRooms();
+        var rooms=director.GetComponentsInChildren<MedievalDungeonKit.DungeonMarker>().Select(DungeonRoomBoundary.GetOrCreate).Where(r=>r!=null).ToArray();
+        Check(rooms.Length>0,"Actual Map1 provides chest candidate rooms");
+        for(int floor=1;floor<=3;floor++)
+        {
+            bool spawned=false, tested=false; DungeonRoomBoundary selected=null;
+            foreach(var room in rooms.Where(r=>OverworldDirector.MarkerFloor(r.transform)==floor))
+            {
+                if(!room.TryGetNavMeshPoint(room.transform.position,1,new NavMeshQueryFilter{agentTypeID=0,areaMask=NavMesh.AllAreas},out var point))continue;
+                Move(point); yield return .1f; CloseUpgrade(); selected=room; tested=true;
+                for(int attempt=0;attempt<5 && !spawned;attempt++) spawned=director.TrySpawnChest();
+                if(spawned || floor==1) break;
+            }
+            Check(tested,"Player reaches an actual navigable room on floor " + floor);
+            if(floor==1)
+            {
+                Check(!spawned && Object.FindObjectsByType<TreasureChest>(FindObjectsSortMode.None).Length==0,"First-floor room cannot spawn a weapon chest");
+                var node=new GameObject("Existing first-floor chest"); node.transform.position=selected.transform.position;
+                var existing=node.AddComponent<TreasureChest>(); existing.Initialize(selected,CharacterWeapons.Create(WeaponType.Longbow,1,.8f));
+                existing.TakeDamage(100000,health);
+                Check(existing.IsBroken && Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==0,"Existing first-floor chest cannot bypass the key-only loot rule");
+                Object.DestroyImmediate(node);
+            }
+            else
+            {
+                Check(spawned,"Floor " + floor + " still spawns a real chest on safe NavMesh and floor geometry");
+                var chest=Object.FindFirstObjectByType<TreasureChest>(); chest.TakeDamage(100000,health);
+                Check(chest.IsBroken && Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1,"Breaking a floor " + floor + " chest still yields exactly one weapon");
+                chest.TakeDamage(100000,health);
+                Check(Object.FindObjectsByType<WeaponPickup>(FindObjectsSortMode.None).Length==1,"Broken chest cannot duplicate its reward");
+                Object.DestroyImmediate(chest.gameObject); ClearLoot();
+            }
+        }
+    }
+}

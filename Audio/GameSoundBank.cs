@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 public enum GameSound
@@ -7,11 +7,11 @@ public enum GameSound
     Footstep, Jump, Land, Slide, Stance, CameraSwitch,
     Rifle, SubmachineGun, Shotgun, RPG, Pistol, SniperRifle, MachineGun,
     Equip, Impact, EnemyHurt, EnemyDeath, Sword, Crossbow,
-    GrenadePin, GrenadeThrow, GrenadeBounce, Fuse, Explosion,
+    Explosion = 30, // Retired cue IDs 26-29 remain unused; later sound IDs stay stable.
     PlayerHurt, ArmorHit, ArmorBreak, PlayerDeath, Respawn, Heal, LowHealth,
     Pickup, Experience, Key, Coins, LevelUp, Upgrade, BuildReady,
     Unlock, RoomEnter, ArmorRestored, Teleport, BossSpawn, BossTransform, BossBurst, BossDeath,
-    TrapWarning, SpikeRise, FloorCrack, FloorCollapse, Ambience
+    TrapWarning, SpikeRise, FloorCrack, FloorCollapse, Ambience, FlameJet, MagicCast
 }
 
 // Original synthesized effects. No external downloads or third-party audio licenses.
@@ -24,6 +24,7 @@ public static class GameSoundBank
         switch (sound)
         {
             case GameSound.Ambience: return 8f;
+            case GameSound.FlameJet: return 1.45f;
             case GameSound.BossDeath: return 2.4f;
             case GameSound.BossSpawn: case GameSound.BossTransform: return 1.8f;
             case GameSound.Explosion: case GameSound.PlayerDeath: return 1.2f;
@@ -43,10 +44,11 @@ public static class GameSoundBank
         switch (sound)
         {
             case GameSound.Hover: return .10f;
+            case GameSound.FlameJet: return .3f;
             case GameSound.Click: case GameSound.Experience: return .18f;
-            case GameSound.Fuse: case GameSound.RoomEnter: case GameSound.ArmorRestored: return .2f;
+            case GameSound.RoomEnter: case GameSound.ArmorRestored: return .2f;
             case GameSound.Footstep: case GameSound.Stance: case GameSound.LowHealth: return .22f;
-            case GameSound.Impact: case GameSound.EnemyHurt: case GameSound.GrenadeBounce: return .25f;
+            case GameSound.Impact: case GameSound.EnemyHurt: return .25f;
             case GameSound.Explosion: case GameSound.BossDeath: case GameSound.BossTransform: return .55f;
             default: return .38f;
         }
@@ -86,18 +88,25 @@ public static class GameSoundBank
             }
             else switch (sound)
             {
+                case GameSound.MagicCast:
+                    value = .38 * Math.Sin(2 * Math.PI * (420 * t + 160 * t * t)) * Math.Sin(Math.PI * u) +
+                        .12 * high * Math.Exp(-t * 16);
+                    break;
+                case GameSound.FlameJet:
+                    value = (.45 * noise + .9 * low) * Math.Min(1,t / .04) * Math.Pow(Math.Sin(Math.PI * u), .6);
+                    break;
                 case GameSound.Ambience:
                     value = low * .35 + .035 * Math.Sin(2 * Math.PI * 48 * t) +
                         .018 * Math.Sin(2 * Math.PI * 72 * t) * (.5 + .5 * Math.Sin(2 * Math.PI * t / duration));
                     break;
-                case GameSound.Footstep: case GameSound.Land: case GameSound.GrenadeBounce: case GameSound.FloorCrack:
+                case GameSound.Footstep: case GameSound.Land: case GameSound.FloorCrack:
                     value = low * 2.1 * Math.Exp(-t * 25) + .18 * high * Math.Exp(-t * 65) +
-                        .3 * Math.Sin(2 * Math.PI * (sound == GameSound.GrenadeBounce ? 620 : 92) * t) * Math.Exp(-t * 35);
+                        .3 * Math.Sin(2 * Math.PI * 92 * t) * Math.Exp(-t * 35);
                     break;
                 case GameSound.Slide: case GameSound.Stance:
                     value = (.7 * low + .12 * noise) * Math.Sin(Math.PI * u) * (1 - u);
                     break;
-                case GameSound.Jump: case GameSound.GrenadeThrow: case GameSound.Sword:
+                case GameSound.Jump: case GameSound.Sword:
                     value = noise * .3 * Math.Pow(Math.Sin(Math.PI * u), 2) +
                         .25 * Math.Sin(2 * Math.PI * (180 * t - 200 * t * t)) * Math.Sin(Math.PI * u);
                     break;
@@ -110,7 +119,7 @@ public static class GameSoundBank
                         value += .18 * Math.Sin(phase * 1.51) * Math.Sin(Math.PI * u) + .12 * Math.Sin(phase * 2.02) * (1 - u);
                     break;
                 case GameSound.ArmorHit: case GameSound.ArmorBreak: case GameSound.Impact:
-                case GameSound.Equip: case GameSound.GrenadePin: case GameSound.Crossbow: case GameSound.SpikeRise:
+                case GameSound.Equip: case GameSound.Crossbow: case GameSound.SpikeRise:
                     double metal = sound == GameSound.ArmorBreak ? 480 : sound == GameSound.Crossbow ? 180 : 1100;
                     value = (.35 * Math.Sin(2 * Math.PI * metal * t) + .22 * Math.Sin(2 * Math.PI * metal * 1.473 * t)) * Math.Exp(-t * 30) +
                         .24 * noise * Math.Exp(-t * 48) + .25 * low * Math.Exp(-t * 16);
@@ -149,7 +158,6 @@ public static class GameSoundBank
             case GameSound.Open: return 330 + time * 1400;
             case GameSound.Close: return 620 - time * 1400;
             case GameSound.Denied: return time < .12 ? 185 : 147;
-            case GameSound.Fuse: return 1550;
             case GameSound.TrapWarning: return time < .12 ? 330 : 220;
             case GameSound.RoomEnter: return 110 + time * 100;
             case GameSound.ArmorRestored: return 660 + time * 500;

@@ -1,0 +1,12 @@
+PASS
+PASS Client enters supported guest mode before joining a LAN room
+PASS Independent client joins the real TCP room and actual Map1: 
+PASS Host-confirmed early attack choice reaches the client
+PASS Client keeps authoritative movement disabled
+PASS Client sees the host-created planned-echo location and timer
+PASS Triggering the echo removes its armed marker on the client
+PASS Equipped armor behavior survives actual network inventory snapshots
+PASS Replicated team-ward position, range and remaining time are visible
+PASS Guaranteed event key rewards reach the client
+PASS Cross-region merchant consequence reaches the independent client
+PASS No unexpected runtime errors: 

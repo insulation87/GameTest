@@ -1,0 +1,19 @@
+PASS Checks run in Unity Play Mode
+PASS Actual Resources config enables the deployed WSS endpoint
+PASS Internet room configuration is enabled
+PASS Unity reaches the real HTTPS health endpoint
+PASS Invalid token cannot create a public room
+PASS Unity WSS reaches public relay and translates its auth rejection
+PASS Local fake login begins without using a real account
+PASS Signed-in menu defaults to configured internet mode
+PASS Internet mode requests a room code and hides LAN port
+PASS Host UI starts the configured public relay connection
+PASS Host UI displays public auth rejection
+PASS Failed auth leaves no room or scene transition
+PASS Launch action becomes available after failure
+PASS Launch action becomes available after failure
+PASS Launch action becomes available after failure
+PASS Invalid room code is rejected before connecting
+PASS Unsigned menu disables internet and selects LAN
+PASS No game runtime errors: 
+PASS 18 Play Mode checks

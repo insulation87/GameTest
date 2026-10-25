@@ -4,6 +4,16 @@ using UnityEngine;
 [RequireComponent(typeof(Rigidbody), typeof(Collider))]
 public class Projectile : MonoBehaviour
 {
+    static readonly HashSet<Projectile> activeProjectiles = new HashSet<Projectile>();
+    Collider[] ownColliders;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetRegistry() => activeProjectiles.Clear();
+
+    void Awake() => ownColliders = GetComponentsInChildren<Collider>();
+    void OnEnable() => activeProjectiles.Add(this);
+    void OnDisable() => activeProjectiles.Remove(this);
+
     [Min(0.1f)] public float lifetime = 5f;
 
     private float damage;
@@ -15,6 +25,10 @@ public class Projectile : MonoBehaviour
     private Vector3 launchPosition;
     private WeaponType weaponType;
     private WeaponBuildSystem weaponBuild;
+    bool tacticalEcho, ricochet;
+    public bool IsTacticalEcho => tacticalEcho;
+    public void SetTacticalEcho() { tacticalEcho = true; }
+    public void SetRicochet() { ricochet = true; }
     private readonly HashSet<EnemyHealth> damagedEnemies = new HashSet<EnemyHealth>();
 
     public void SetVisualModel(
@@ -115,8 +129,14 @@ public class Projectile : MonoBehaviour
             return;
 
         EnemyHealth enemyHealth = hitCollider.GetComponentInParent<EnemyHealth>();
-        if (enemyHealth != null)
+        TreasureChest chest = hitCollider.GetComponentInParent<TreasureChest>();
+        if (chest != null && explosionRadius <= 0f)
         {
+            chest.TakeDamage(damage, owner != null ? owner.GetComponentInParent<PlayerHealth>() : null);
+        }
+        else if (enemyHealth != null)
+        {
+            if (enemyHealth.IsDead) return;
             PlayerHealth player = owner != null
                 ? owner.GetComponentInParent<PlayerHealth>()
                 : null;
@@ -132,10 +152,30 @@ public class Projectile : MonoBehaviour
                 float dealtDamage = weaponBuild != null
                     ? weaponBuild.ModifyDamage(damage, enemyHealth, weaponType, distance, false, headshot)
                     : damage;
-                enemyHealth.TakeDamage(dealtDamage, player);
+                if (tacticalEcho && enemyHealth.TryGetComponent(out WeaponComboStatus echoStatus)) dealtDamage = echoStatus.EchoDamage(player, dealtDamage);
+                enemyHealth.TakeDamage(dealtDamage, player, launchPosition);
                 if (weaponBuild != null)
                     weaponBuild.OnHit(enemyHealth, weaponType, distance, false, headshot, enemyHealth.IsDead);
 
+                if (ricochet)
+                {
+                    ricochet = false;
+                    EnemyHealth nearest = null; float best = 81f;
+                    foreach (var candidate in EnemyHealth.ActiveEnemies)
+                    {
+                        if (candidate == null || candidate.IsDead || damagedEnemies.Contains(candidate)) continue;
+                        float square = (candidate.transform.position - transform.position).sqrMagnitude;
+                        if (square < best && TacticalField.Clear(transform.position, candidate.transform.position + Vector3.up * .5f, candidate, player))
+                        { nearest = candidate; best = square; }
+                    }
+                    if (nearest != null)
+                    {
+                        IgnoreEnemyCollisions(enemyHealth);
+                        launchVelocity = (nearest.transform.position + Vector3.up * .5f - transform.position).normalized * launchVelocity.magnitude;
+                        GetComponent<Rigidbody>().linearVelocity = launchVelocity;
+                        transform.rotation = Quaternion.LookRotation(launchVelocity); return;
+                    }
+                }
                 if (remainingPenetrations > 0)
                 {
                     remainingPenetrations--;
@@ -184,17 +224,21 @@ public class Projectile : MonoBehaviour
             QueryTriggerInteraction.Ignore
         );
         HashSet<EnemyHealth> damagedEnemies = new HashSet<EnemyHealth>();
+        HashSet<TreasureChest> damagedChests = new HashSet<TreasureChest>();
 
         foreach (Collider hit in hits)
         {
+            TreasureChest chest = hit.GetComponentInParent<TreasureChest>();
+            if (chest != null && damagedChests.Add(chest)) chest.TakeDamage(damage, damageSource);
             EnemyHealth enemy = hit.GetComponentInParent<EnemyHealth>();
-            if (enemy != null && damagedEnemies.Add(enemy))
+            if (enemy != null && !enemy.IsDead && damagedEnemies.Add(enemy))
             {
                 float distance = Vector3.Distance(launchPosition, enemy.transform.position);
                 float dealtDamage = weaponBuild != null
                     ? weaponBuild.ModifyDamage(damage, enemy, weaponType, distance, true, false)
                     : damage;
-                enemy.TakeDamage(dealtDamage, damageSource);
+                if (tacticalEcho && enemy.TryGetComponent(out WeaponComboStatus echoStatus)) dealtDamage = echoStatus.EchoDamage(damageSource, dealtDamage);
+                enemy.TakeDamage(dealtDamage, damageSource, launchPosition);
                 if (weaponBuild != null)
                     weaponBuild.OnHit(enemy, weaponType, distance, true, false, enemy.IsDead);
             }
@@ -215,19 +259,13 @@ public class Projectile : MonoBehaviour
 
     void IgnoreOtherProjectileCollisions()
     {
-        Collider[] ownColliders = GetComponentsInChildren<Collider>();
-        Projectile[] otherProjectiles = FindObjectsByType<Projectile>(
-            FindObjectsInactive.Exclude,
-            FindObjectsSortMode.None
-        );
-
-        foreach (Projectile otherProjectile in otherProjectiles)
+        foreach (Projectile otherProjectile in activeProjectiles)
         {
             if (otherProjectile == null || otherProjectile == this)
                 continue;
 
-            Collider[] otherColliders =
-                otherProjectile.GetComponentsInChildren<Collider>();
+            Collider[] otherColliders = otherProjectile.ownColliders;
+            if (otherColliders == null) continue;
 
             foreach (Collider ownCollider in ownColliders)
             {

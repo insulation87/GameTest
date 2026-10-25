@@ -1,0 +1,11 @@
+Succeeded
+Endpoint: wss://gametest-relay.onrender.com/coop
+Bytes: 261525272
+Errors: 1
+Warnings: 1
+Options: None
+Defines: 
+Company: DefaultCompany
+Product: GameTest
+Host type is not matching any asset type at Path Packages/com.unity.render-pipelines.high-definition/Runtime/RenderPipelineResources/ShaderGraph/AutodeskInteractiveTransparent.shadergraph.
+Access token is empty. Native symbols will not be uploaded for this build. Please make sure you are signed in to the Unity Cloud.

@@ -1,0 +1,3 @@
+PASS 18 Play Mode checks
+Unity Editor Search startup exceptions: 1
+Public service: health and invalid-token rejection only; no real login or room created.

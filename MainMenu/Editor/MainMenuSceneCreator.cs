@@ -68,7 +68,7 @@ public static class MainMenuSceneCreator
         UpdateBuildSettings();
         AssetDatabase.SaveAssets();
         EditorUtility.DisplayDialog("Main Menu created",
-            "MainMenu is now the first scene in Build Settings.\nPress Play to test it.", "OK");
+            "Login starts first when available, followed by MainMenu and Map1.\nPress Play to test it.", "OK");
     }
 
     private static void CreateCamera()
@@ -271,12 +271,7 @@ public static class MainMenuSceneCreator
 
     private static void UpdateBuildSettings()
     {
-        string gameScene = "Assets/Scenes/Map1.unity";
-        EditorBuildSettings.scenes = new[]
-        {
-            new EditorBuildSettingsScene(ScenePath, true),
-            new EditorBuildSettingsScene(gameScene, true)
-        };
+        LoginSceneSetup.UpdateBuildSettings();
     }
 }
 #endif

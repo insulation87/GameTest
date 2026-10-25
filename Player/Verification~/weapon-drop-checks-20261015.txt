@@ -1,0 +1,18 @@
+PASS Checks execute inside Unity Editor Play Mode
+PASS Load actual production Enemy prefab
+PASS Actual prefab weak weapon chance is 17.5% (formerly 35%)
+PASS Actual prefab strong weapon chance is 4% (formerly 8%)
+PASS Health, armor and progression default drop rates remain 10%, 25%, 1%
+PASS Strength 0: real death drops weapon just below 17.50%
+PASS Strength 0: real death rejects weapon just above 17.50%
+PASS Strength 0: formerly eligible upper half now produces no weapon
+PASS Strength 0: 1000 real monster deaths yield 176 weapons, matching seeded 17.50% threshold
+PASS Strength 0.5: real death drops weapon just below 10.75%
+PASS Strength 0.5: real death rejects weapon just above 10.75%
+PASS Strength 0.5: formerly eligible upper half now produces no weapon
+PASS Strength 0.5: 1000 real monster deaths yield 109 weapons, matching seeded 10.75% threshold
+PASS Strength 1: real death drops weapon just below 4.00%
+PASS Strength 1: real death rejects weapon just above 4.00%
+PASS Strength 1: formerly eligible upper half now produces no weapon
+PASS Strength 1: 1000 real monster deaths yield 36 weapons, matching seeded 4.00% threshold
+PASS No unexpected runtime errors: 

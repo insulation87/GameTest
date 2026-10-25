@@ -1,5 +1,9 @@
 # Medieval NPC and boss appearances
 
+Default runtime enemies now use the voxel models in `PixelArt/PixelCharacterFactory.cs`,
+including three NPC palettes, sword/shield/crossbow equipment and the three boss forms.
+The prefabs and authoring workflow below remain available for explicit appearance overrides.
+
 Enemies now use naturally proportioned, low-poly medieval armor rather than
 school uniforms: enclosed great helms, breastplates, pauldrons, bracers, greaves,
 leather gloves, colored surcoats, swords, heraldic shields and crossbows.
@@ -17,11 +21,13 @@ damage = 1 + (max(1, level) - 1) * 0.2.
 | Level | Damage | Equipment |
 | --- | --- | --- |
 | 1 | 1 | Sword and shield |
-| 20 | 4.8 | Sword and shield |
+| 9 | 2.6 | Sword and shield |
+| 10 | 2.8 | Crossbow; sword/shield at close range |
+| 20 | 4.8 | Crossbow; sword/shield at close range |
 | 21 | 5 | Crossbow; sword/shield at close range |
 | 100 (boss) | 20.8 | Three forms; sword/shield, ranged bolts, escalating radial bursts |
 
-Levels 1-20 cannot launch ranged attacks. Level 21 and above use ranged attacks
+Levels 1-9 cannot launch ranged attacks. Level 10 and above use ranged attacks
 within 12 units when line of sight is clear, switching to melee within 1.5 units.
 These ranges and attack intervals are configurable on EnemyAI. Damage is not
 randomized; old serialized random-attack and boss-damage fields are retained only
@@ -94,6 +100,18 @@ melee range recheck, ranged gate, direct projectile hit, owner exclusion,
 single-hit damage, thin-wall blocking and line-of-sight checks.
 This is not a full gameplay test of the main dungeon scene; navigation, animation
 transitions and per-weapon alignment should still be checked there.
+
+`EnemyRangedReview.Run` is an explicit batch-mode entry point for an isolated
+Unity project. It runs the current gameplay scripts against a real NavMesh,
+NPC appearance, player health and projectile collisions in Play Mode, without
+creating a player controller or touching player saves. Invoke it with
+`-batchmode -nographics -executeMethod EnemyRangedReview.Run`; it exits when
+finished and writes `npc-ranged-result.txt` beside the isolated project folder.
+On 2026-10-06, all 17 checks passed in Unity 6000.3.10f1: level 9 cannot shoot;
+levels 10 and 11 fire bolts and apply the correct damage once; close targets
+receive melee attacks; walls, thin walls and range limits block ranged damage;
+and changing an NPC from level 9 to 10 unlocks ranged attacks during play.
+This automated run does not assess rendered visuals or the full dungeon scene.
 
 ## License
 

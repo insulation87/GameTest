@@ -1,8 +1,8 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody), typeof(BoxCollider))]
-public class Player : MonoBehaviour
+public partial class Player : MonoBehaviour
 {
     [Header("Move")]
     public float walkSpeed = 5f;
@@ -56,11 +56,16 @@ public class Player : MonoBehaviour
     public bool IsCrouching => isCrouching;
     public bool IsSliding => isSliding;
     public float MovementAmount => moveDirection.magnitude;
-    public float VerticalSpeed => rb != null ? rb.linearVelocity.y : 0f;
+    public float VerticalSpeed => CoopSession.IsClient ? networkVerticalSpeed : rb != null ? rb.linearVelocity.y : 0f;
     public float CameraHeightOffset => cameraHeightOffset;
 
     void Awake()
     {
+        rb = GetComponent<Rigidbody>();
+        bodyCollider = GetComponent<BoxCollider>();
+        if (GetComponent<CharacterSkills>() == null) gameObject.AddComponent<CharacterSkills>();
+        if (GetComponent<GameProgressSave>() == null)
+            gameObject.AddComponent<GameProgressSave>();
         if (GetComponent<CharacterMovementAudio>() == null)
             gameObject.AddComponent<CharacterMovementAudio>();
         if (GetComponent<PlayerCursorController>() == null)
@@ -72,7 +77,7 @@ public class Player : MonoBehaviour
     void Start()
     {
         // A newly loaded gameplay scene must never inherit a paused menu state.
-        Time.timeScale = 1f;
+        Time.timeScale = GameSceneFlow.IsLoading ? 0f : 1f;
 
         rb = GetComponent<Rigidbody>();
         bodyCollider = GetComponent<BoxCollider>();
@@ -88,7 +93,8 @@ public class Player : MonoBehaviour
 
         rb.constraints = RigidbodyConstraints.FreezeRotationX | RigidbodyConstraints.FreezeRotationZ;
         rb.interpolation = RigidbodyInterpolation.Interpolate;
-        rb.collisionDetectionMode = CollisionDetectionMode.Continuous;
+        rb.collisionDetectionMode = rb.isKinematic ? CollisionDetectionMode.ContinuousSpeculative : CollisionDetectionMode.ContinuousDynamic;
+        ConfigureBodyContact();
 
         if (GetComponent<AnimeCharacterVisual>() == null)
             gameObject.AddComponent<AnimeCharacterVisual>();
@@ -96,6 +102,7 @@ public class Player : MonoBehaviour
 
     void Update()
     {
+        if (!CoopSession.Simulates(this)) return;
         if (Time.timeScale <= 0f)
         {
             ClearMovementInput();
@@ -107,13 +114,14 @@ public class Player : MonoBehaviour
         HandleStanceInput();
         UpdateCameraHeight();
 
-        if (!isSliding && Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (!isSliding && CoopInput.Down(this, CoopButton.Jump, KeyCode.Space))
             jumpRequested = true;
 
     }
 
     void FixedUpdate()
     {
+        if (!CoopSession.Simulates(this)) return;
         if (Time.timeScale <= 0f)
             return;
 
@@ -129,6 +137,7 @@ public class Player : MonoBehaviour
         jumpRequested = false;
         currentSpeed = 0f;
         isRunning = false;
+        StopHorizontalMotion();
     }
 
     void ReadInput()
@@ -137,17 +146,10 @@ public class Player : MonoBehaviour
         float vertical = 0f;
 
         Keyboard keyboard = Keyboard.current;
-        if (keyboard != null)
-        {
-            if (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed)
-                horizontal -= 1f;
-            if (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed)
-                horizontal += 1f;
-            if (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed)
-                vertical -= 1f;
-            if (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed)
-                vertical += 1f;
-        }
+        CoopActor actor = CoopInput.Actor(this);
+        if (actor != null)
+        { horizontal = actor.Frame.move.x; vertical = actor.Frame.move.y; }
+        else { Vector2 movement = GameControls.Movement(0); horizontal = movement.x; vertical = movement.y; }
 
         Vector2 input = new Vector2(horizontal, vertical);
 
@@ -184,18 +186,14 @@ public class Player : MonoBehaviour
             slideTimeRemaining -= Time.fixedDeltaTime;
             float slideProgress = 1f - Mathf.Clamp01(slideTimeRemaining / Mathf.Max(0.01f, slideDuration));
             float currentSlideSpeed = Mathf.Lerp(slideSpeed, slideEndSpeed, slideProgress);
-            rb.MovePosition(rb.position + slideDirection * currentSlideSpeed * Time.fixedDeltaTime);
+            SetMovementVelocity(slideDirection * currentSlideSpeed);
 
             if (slideTimeRemaining <= 0f || !isGrounded)
                 FinishSlide();
             return;
         }
 
-        if (moveDirection.sqrMagnitude <= 0.0001f)
-            return;
-
-        Vector3 targetPosition = rb.position + moveDirection * currentSpeed * Time.fixedDeltaTime;
-        rb.MovePosition(targetPosition);
+        SetMovementVelocity(moveDirection * currentSpeed);
     }
 
     void HandleRotation()
@@ -214,7 +212,7 @@ public class Player : MonoBehaviour
             rotationSpeed * Time.fixedDeltaTime
         );
 
-        rb.MoveRotation(smoothRotation);
+        RotateWithCollision(smoothRotation);
     }
 
     void HandleRun()
@@ -224,9 +222,12 @@ public class Player : MonoBehaviour
         WeaponBuildSystem build = GetComponent<WeaponBuildSystem>();
         if (build != null)
             speedMultiplier *= build.MoveSpeedMultiplier;
-        bool runKeyHeld = Keyboard.current != null &&
-                          (Keyboard.current.leftShiftKey.isPressed ||
-                           Keyboard.current.rightShiftKey.isPressed);
+        CombatMomentum momentum = GetComponent<CombatMomentum>();
+        if (momentum != null) speedMultiplier *= momentum.MoveSpeedMultiplier;
+        CharacterSkills skills = GetComponent<CharacterSkills>();
+        if (skills != null) speedMultiplier *= skills.MoveSpeedMultiplier;
+        speedMultiplier *= GetComponent<TacticalEquipment>()?.MoveMultiplier ?? 1f;
+        bool runKeyHeld = CoopInput.Held(this, CoopButton.Run);
         isRunning = runKeyHeld && !isCrouching && !isSliding &&
                     moveDirection.sqrMagnitude > 0.0001f;
         float baseSpeed = isCrouching ? crouchSpeed : isRunning ? runSpeed : walkSpeed;
@@ -236,11 +237,11 @@ public class Player : MonoBehaviour
     void HandleStanceInput()
     {
         Keyboard keyboard = Keyboard.current;
-        if (keyboard == null)
+        if (keyboard == null && CoopInput.Actor(this) == null)
             return;
 
-        bool crouchPressed = keyboard.leftCtrlKey.wasPressedThisFrame;
-        bool crouchHeld = keyboard.leftCtrlKey.isPressed;
+        bool crouchPressed = CoopInput.Down(this, CoopButton.Crouch, KeyCode.LeftControl);
+        bool crouchHeld = CoopInput.Held(this, CoopButton.Crouch);
 
         if (crouchPressed && isRunning && isGrounded &&
             moveDirection.sqrMagnitude > 0.0001f && Time.time >= nextSlideTime)
@@ -275,8 +276,7 @@ public class Player : MonoBehaviour
     {
         isSliding = false;
 
-        bool keepCrouching = Keyboard.current != null &&
-                             Keyboard.current.leftCtrlKey.isPressed;
+        bool keepCrouching = CoopInput.Held(this, CoopButton.Crouch);
         if (keepCrouching || !CanStandUp())
             SetCrouching(true);
         else
@@ -329,7 +329,8 @@ public class Player : MonoBehaviour
         if (bodyCollider == null || standingColliderSize == Vector3.zero)
             return true;
 
-        Vector3 worldCenter = transform.TransformPoint(standingColliderCenter);
+        Quaternion bodyRotation = rb != null ? rb.rotation : transform.rotation;
+        Vector3 worldCenter = (rb != null ? rb.position : transform.position) + bodyRotation * Vector3.Scale(standingColliderCenter,transform.lossyScale);
         Vector3 scaledSize = Vector3.Scale(standingColliderSize, transform.lossyScale);
         Vector3 halfExtents = scaledSize * 0.5f - Vector3.one * 0.025f;
         halfExtents.x = Mathf.Max(0.01f, halfExtents.x);
@@ -339,7 +340,7 @@ public class Player : MonoBehaviour
         Collider[] overlaps = Physics.OverlapBox(
             worldCenter,
             halfExtents,
-            transform.rotation,
+            bodyRotation,
             groundLayer.value == 0 ? Physics.AllLayers : groundLayer.value,
             QueryTriggerInteraction.Ignore
         );
@@ -444,6 +445,11 @@ public class Player : MonoBehaviour
 
     public void Teleport(Vector3 position, Quaternion rotation)
     {
+        GetComponent<RogueTactics>()?.ResetTransientState();
+        GetComponent<CombatMomentum>()?.ResetCombat();
+        GetComponent<CharacterSkills>()?.CancelEffects();
+        GetComponent<TacticalEquipment>()?.ResetTransientState();
+        TacticalField.ClearOwned(GetComponent<PlayerHealth>());
         GameAudio.UI(GameSound.Teleport);
         ClearMovementInput();
         isSliding = isCrouching = isRunning = false;
@@ -466,6 +472,7 @@ public class Player : MonoBehaviour
 
     void OnDisable()
     {
+        StopHorizontalMotion();
         isSliding = false;
         isCrouching = false;
         RestoreStandingCollider();
@@ -505,7 +512,6 @@ public class Player : MonoBehaviour
 [DisallowMultipleComponent]
 public class AnimeCharacterVisual : MonoBehaviour
 {
-    private const string ModelResource = "Characters/AnimeGirl/AnimeGirlModel";
     [Min(0.01f)] public float animationBlendTime = 0.15f;
 
     private Player player;
@@ -521,17 +527,19 @@ public class AnimeCharacterVisual : MonoBehaviour
     private int blinkShape = -1;
     private float blinkTimer;
 
+    public void RefreshCharacterStyle(CharacterDefinition character)
+    {
+        if (model == null) return;
+        PixelCharacterFactory.ApplyCharacterStyle(model,character);
+        model.name = character.Name + " Pixel Model";
+        modelRenderers = model.GetComponentsInChildren<Renderer>(true);
+        UpdateVisibility(true);
+    }
+
     void Start()
     {
         player = GetComponent<Player>();
         health = GetComponent<PlayerHealth>();
-        GameObject prefab = Resources.Load<GameObject>(ModelResource);
-        if (prefab == null)
-        {
-            Debug.LogError("Missing character model: Resources/" + ModelResource, this);
-            enabled = false;
-            return;
-        }
 
         // Hide only the old player's body, leaving cameras, weapons and UI intact.
         foreach (MeshRenderer renderer in GetComponentsInChildren<MeshRenderer>(true))
@@ -544,8 +552,8 @@ public class AnimeCharacterVisual : MonoBehaviour
             }
         }
 
-        model = Instantiate(prefab, transform, false);
-        model.name = "Blonde Anime Girl";
+        model = PixelCharacterFactory.Create(transform, "Player");
+        model.name = (GetComponent<CharacterSkills>()?.Character.Name ?? "Pixel Adventurer") + " Pixel Model";
         BoxCollider body = GetComponent<BoxCollider>();
         float floorHeight = body != null ? body.center.y - body.size.y * 0.5f : -1f;
         model.transform.localPosition = Vector3.up * floorHeight;
@@ -643,6 +651,7 @@ public class AnimeCharacterVisual : MonoBehaviour
     {
         bool isFirstPerson = player.fpsCamera != null &&
                              player.fpsCamera.gameObject.activeInHierarchy;
+        if (CoopSession.IsMultiplayer) isFirstPerson = false;
         if (!force && isFirstPerson == firstPerson)
             return;
 

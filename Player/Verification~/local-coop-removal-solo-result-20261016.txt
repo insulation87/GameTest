@@ -1,0 +1,34 @@
+PASS
+PASS Feature removal is verified in actual Unity Play Mode
+PASS Game progress and persistent preferences are isolated from user data
+PASS Actual Map1 solo run contains exactly one player
+PASS Split-screen mode is removed while network enum IDs remain stable
+PASS Real primary keyboard input still reaches the gameplay frame
+PASS Primary keyboard still moves the actual solo player
+PASS Second keyboard input no longer creates a second-player frame
+PASS A connected gamepad cannot reactivate the removed local player
+PASS Retired second-player binding profiles are unavailable
+PASS Secondary keyboard and gamepad never create an extra actor
+PASS Real settings expose only the keyboard/mouse profile
+PASS Second-player controls and help have been removed from the settings UI
+PASS Legacy settings calls cannot select a second-player profile
+PASS Player can bind a formerly reserved second-player key
+PASS Primary custom bindings survive save and reload without retired-profile conflicts
+PASS New primary binding reaches real input
+PASS Rebound key produces a primary skill input frame
+PASS Actual single-player character skill remains usable after settings changes
+PASS Solo progress can still be saved to the isolated file
+PASS Actual login scene opens before changing account mode
+PASS Guest can enter the retained single-player and LAN menu flow
+PASS Legacy split-screen launch is rejected without starting a scene or changing mode
+PASS Session refuses to spawn a second local actor through the old API
+PASS Real transition back to MainMenu starts
+PASS Actual main menu no longer advertises local co-op
+PASS Actual multiplayer menu opens through its main-menu button
+PASS Actual multiplayer UI has no second character, split-screen entry or related help
+PASS Only host and join launch actions remain
+PASS All ten retained character choices cycle correctly
+PASS Guest retains LAN selection while internet still requires login
+PASS Remaining LAN host action still validates its port
+PASS Custom primary controls remain available through menu transitions
+PASS No unexpected game/runtime errors: 

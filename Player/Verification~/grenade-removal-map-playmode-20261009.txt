@@ -1,0 +1,24 @@
+PASS
+Actual Login scene and login UI initialize
+Test-only authentication starts without external requests
+Actual MainMenu survives the login transition
+Actual Map1 loads after grenade removal
+Map1 loads its saved grassland and forest geometry
+Both bidirectional portal links exist
+Actual solo/cooperative Map1 contains no grenade components or HUD entries
+Region 1 has baked navigation
+Region 2 has baked navigation
+Region 3 has baked navigation
+All four grenade gameplay types are absent from the running game
+The existing 10/20 progression requirements are preserved
+Legacy grenade inventory data is ignored while all remaining items and capacity are preserved
+A retired grenade network command cannot change the equipped weapon or inventory
+The actual updated NPC prefab still spawns on saved navigation
+Spawned enemy keeps one-percent keys and exposes no grenade loot setting
+Real NPC death still produces weapon, armor, medical, experience and progression loot
+Real NPC death creates no grenade pickup or thrown entity
+The actual remaining medical pickup enters the backpack
+The remaining medical-pack action heals and consumes its item normally
+Pressing the former grenade key leaves the normal weapon available and creates no held grenade
+Actual Map1 saves and reloads normal equipment without any grenade inventory field
+No unexpected Unity gameplay errors: 

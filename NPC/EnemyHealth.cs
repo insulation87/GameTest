@@ -1,7 +1,14 @@
+﻿using System.Collections.Generic;
 using UnityEngine;
 
-public class EnemyHealth : MonoBehaviour
+public partial class EnemyHealth : MonoBehaviour
 {
+    static readonly HashSet<EnemyHealth> activeEnemies = new HashSet<EnemyHealth>();
+    public static IReadOnlyCollection<EnemyHealth> ActiveEnemies => activeEnemies;
+
+    [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+    static void ResetRegistry() => activeEnemies.Clear();
+
     [Min(1f)] public float maxHealth = 100f;
 
     [Header("Damage Numbers")]
@@ -22,9 +29,9 @@ public class EnemyHealth : MonoBehaviour
 
     [Header("Weapon Drop")]
     [Tooltip("Drop chance for the weakest NPC.")]
-    [Range(0f, 1f)] public float weakNpcWeaponDropChance = 0.35f;
+    [Range(0f, 1f)] public float weakNpcWeaponDropChance = 0.175f;
     [Tooltip("Drop chance for the strongest NPC.")]
-    [Range(0f, 1f)] public float strongNpcWeaponDropChance = 0.08f;
+    [Range(0f, 1f)] public float strongNpcWeaponDropChance = 0.04f;
     [Min(1f)] public float weaponPickupLifetime = 45f;
     public GameObject weaponPickupPrefab;
     [SerializeField] private GameObject rifleModel;
@@ -41,19 +48,19 @@ public class EnemyHealth : MonoBehaviour
     [Min(0.1f)] public float maxProjectileSpeed = 90f;
     [Range(0f, 0.5f)] public float weaponStatVariation = 0.1f;
 
-    [Header("Floor Progression Drop")]
-    [Range(0f, 1f)] public float progressionDropChance = 0.01f;
-    [Min(1f)] public float progressionPickupLifetime = 120f;
+    [Header("Armor Equipment Drop")]
+    [Range(0f, 1f)] public float armorEquipmentDropChance = .25f;
 
-    [Header("Grenade Drop")]
-    [Range(0f, 1f)] public float grenadeDropChance = 0.1f;
-    [Min(1f)] public float grenadePickupLifetime = 60f;
+    public const float DefaultProgressionDropChance = 0.01f;
+    [Header("Floor Progression Drop")]
+    [Range(0f, 1f)] public float progressionDropChance = DefaultProgressionDropChance;
+    [Min(1f)] public float progressionPickupLifetime = 120f;
 
     private float currentHealth;
     private int enemyLevel = 1;
     private int experienceReward = 10;
     private float enemyStrength;
-    private int dungeonFloor = 1;
+    [SerializeField, Range(1, 3)] private int dungeonFloor = 1;
 
     public float CurrentHealth => currentHealth;
     public float HealthNormalized => currentHealth / maxHealth;
@@ -64,9 +71,12 @@ public class EnemyHealth : MonoBehaviour
 
     void OnEnable()
     {
+        activeEnemies.Add(this);
         currentHealth = maxHealth;
         IsDead = false;
     }
+
+    void OnDisable() => activeEnemies.Remove(this);
 
     public void SetMaxHealth(float newMaxHealth, bool refillHealth = true)
     {
@@ -81,6 +91,11 @@ public class EnemyHealth : MonoBehaviour
         {
             currentHealth = Mathf.Min(currentHealth, maxHealth);
         }
+    }
+
+    public void RestoreSavedHealth(float value)
+    {
+        currentHealth = Mathf.Clamp(value, 1f, maxHealth);
     }
 
     public void SetLevelAndExperience(int level, int experiencePerLevel)
@@ -104,13 +119,18 @@ public class EnemyHealth : MonoBehaviour
         TakeDamage(damage, null);
     }
 
-    public void TakeDamage(float damage, PlayerHealth damageSource)
+    public void TakeDamage(float damage, PlayerHealth damageSource, Vector3? attackOrigin = null)
     {
         if (damage <= 0f || IsDead)
             return;
 
         BossController boss = GetComponent<BossController>();
         if (boss != null && boss.IsTransforming) return;
+        var mechanics = GetComponent<TacticalBossMechanics>();
+        if (mechanics != null) damage = mechanics.ModifyIncoming(damage, attackOrigin ?? (damageSource != null ? damageSource.transform.position : transform.position - transform.forward));
+        if (damageSource != null) TrackContributor(damageSource);
+        EnemyHitFlash flash = GetComponent<EnemyHitFlash>();
+        if (flash != null) flash.StopFlash();
 
         float actualDamage = Mathf.Min(currentHealth, damage);
         GameAudio.At(GameSound.EnemyHurt, transform.position);
@@ -128,8 +148,19 @@ public class EnemyHealth : MonoBehaviour
 
         if (currentHealth <= 0f)
         {
-            if (boss != null && boss.TryAdvancePhase()) return;
+            if (boss != null && boss.TryAdvancePhase())
+            {
+                damageSource?.GetComponent<CombatMomentum>()?.OnHit(false);
+                return;
+            }
+            damageSource?.GetComponent<CombatMomentum>()?.OnHit(true);
             Die(damageSource);
+        }
+        else
+        {
+            if (flash == null) flash = gameObject.AddComponent<EnemyHitFlash>();
+            flash.Pulse();
+            damageSource?.GetComponent<CombatMomentum>()?.OnHit(false);
         }
     }
 
@@ -169,23 +200,29 @@ public class EnemyHealth : MonoBehaviour
         if (GetComponent<BossController>() != null) GameAudio.UI(GameSound.BossDeath);
         else GameAudio.At(GameSound.EnemyDeath, transform.position);
         IsDead = true;
+        activeEnemies.Remove(this);
+        if (killer != null)
+        {
+            killer.GetComponent<WeaponBuildSystem>()?.ForgetEnemy(this);
+            killer.GetComponent<RogueTactics>()?.OnEnemyKilled(this);
+            killer.GetComponent<CombatMomentum>()?.OnEnemyKilled();
+        }
         DropExperience();
         TryDropHealthPickup();
         TryDropWeapon();
+        TryDropArmorEquipment();
         TryDropProgressionItem();
-        TryDropGrenade();
+        RewardContributors(killer);
+        // Phase transitions return before Die; only the final form opens the result.
+        if (GetComponent<BossController>() != null && GetComponent<TacticalTrialBoss>() == null)
+            DungeonVictoryUI.Show(killer);
         Destroy(gameObject);
-    }
-
-    void TryDropGrenade()
-    {
-        if (Random.value < grenadeDropChance)
-            GrenadePickup.Create(transform.position + Vector3.up * 0.75f, grenadePickupLifetime);
     }
 
     void TryDropProgressionItem()
     {
-        if (Random.value >= progressionDropChance)
+        // Floor one progresses through its guaranteed trials, rather than random monster keys.
+        if (dungeonFloor == 1 || Random.value >= progressionDropChance)
             return;
 
         FloorKeyPickup.Create(
@@ -209,7 +246,7 @@ public class EnemyHealth : MonoBehaviour
         float variation = Random.Range(-weaponStatVariation, weaponStatVariation);
         float quality = Mathf.Clamp01(enemyStrength + variation);
         int weaponLevel = GetRandomWeaponLevel();
-        WeaponType weaponType = (WeaponType)Random.Range(0, 7);
+        WeaponType weaponType = WeaponLoot.RollType();
         WeaponItem weapon = CreateWeaponItem(weaponType, weaponLevel, quality);
         // The body collider's midpoint is approximately waist height.
         Vector3 dropPosition = transform.position;
@@ -254,37 +291,19 @@ public class EnemyHealth : MonoBehaviour
         }
     }
 
+    void TryDropArmorEquipment()
+    {
+        if (Random.value >= armorEquipmentDropChance) return;
+        var item = ArmorLoot.Create((ArmorSlot)Random.Range(0, 4), GetRandomWeaponLevel(),
+            Mathf.Clamp01(enemyStrength + Random.Range(-weaponStatVariation, weaponStatVariation)));
+        Vector3 center = GetComponent<Collider>() != null ? GetComponent<Collider>().bounds.center : transform.position;
+        ArmorLoot.Drop(item, center + Vector3.right * .65f, weaponPickupLifetime);
+    }
+
     public WeaponItem CreateWeaponItem(WeaponType weaponType, int level, float quality)
     {
-        quality = Mathf.Clamp01(quality);
-        float damage = Mathf.Lerp(minWeaponDamage, maxWeaponDamage, quality);
-        float fireInterval = Mathf.Lerp(slowestFireInterval, fastestFireInterval, quality);
-        float projectileSpeed = Mathf.Lerp(minProjectileSpeed, maxProjectileSpeed, quality);
-        int projectilesPerShot = 1;
-        float spreadAngle = 0f;
-        float explosionRadius = 0f;
-        ApplyWeaponTypeStats(
-            weaponType,
-            ref damage,
-            ref fireInterval,
-            ref projectileSpeed,
-            ref projectilesPerShot,
-            ref spreadAngle,
-            ref explosionRadius
-        );
-        return new WeaponItem
-        {
-            weaponName = $"{WeaponInventory.GetWeaponTypeName(weaponType)} 等級 {Mathf.Clamp(level, 1, 100)}",
-            weaponType = weaponType,
-            level = Mathf.Clamp(level, 1, 100),
-            quality = quality,
-            damage = damage,
-            fireInterval = fireInterval,
-            projectileSpeed = projectileSpeed,
-            projectilesPerShot = projectilesPerShot,
-            spreadAngle = spreadAngle,
-            explosionRadius = explosionRadius
-        };
+        return WeaponLoot.Create(weaponType, level, quality, minWeaponDamage, maxWeaponDamage,
+            slowestFireInterval, fastestFireInterval, minProjectileSpeed, maxProjectileSpeed);
     }
 
     int GetRandomWeaponLevel()
@@ -332,57 +351,6 @@ public class EnemyHealth : MonoBehaviour
             "Assets/Weapon/Model/FBX/awp.fbx");
     }
 #endif
-
-    static void ApplyWeaponTypeStats(
-        WeaponType type,
-        ref float damage,
-        ref float fireInterval,
-        ref float projectileSpeed,
-        ref int projectilesPerShot,
-        ref float spreadAngle,
-        ref float explosionRadius)
-    {
-        switch (type)
-        {
-            case WeaponType.SubmachineGun:
-                damage *= 0.65f;
-                fireInterval *= 0.55f;
-                spreadAngle = 1.5f;
-                break;
-            case WeaponType.Shotgun:
-                damage *= 0.45f;
-                fireInterval *= 2.5f;
-                projectileSpeed *= 0.8f;
-                projectilesPerShot = 8;
-                spreadAngle = 8f;
-                break;
-            case WeaponType.RPG:
-                damage *= 2.5f;
-                fireInterval *= 4f;
-                projectileSpeed *= 0.45f;
-                explosionRadius = 5f;
-                break;
-            case WeaponType.Pistol:
-                damage *= 0.8f;
-                fireInterval *= 1.4f;
-                break;
-            case WeaponType.SniperRifle:
-                damage *= 2.2f;
-                fireInterval *= 3f;
-                projectileSpeed *= 1.6f;
-                spreadAngle = 0f;
-                break;
-            case WeaponType.LightMachineGun:
-                damage *= 0.75f;
-                fireInterval *= 0.7f;
-                projectileSpeed *= 0.95f;
-                spreadAngle = 2.5f;
-                break;
-        }
-
-        fireInterval = Mathf.Max(0.01f, fireInterval);
-        projectileSpeed = Mathf.Max(0.1f, projectileSpeed);
-    }
 
     void DropExperience()
     {
@@ -503,8 +471,6 @@ public class EnemyHealth : MonoBehaviour
         weaponStatVariation = Mathf.Clamp(weaponStatVariation, 0f, 0.5f);
         progressionDropChance = Mathf.Clamp01(progressionDropChance);
         progressionPickupLifetime = Mathf.Max(1f, progressionPickupLifetime);
-        grenadeDropChance = Mathf.Clamp01(grenadeDropChance);
-        grenadePickupLifetime = Mathf.Max(1f, grenadePickupLifetime);
     }
 }
 
@@ -667,6 +633,7 @@ public class ExperiencePickup : MonoBehaviour, IMagneticPickup
 
 public class WeaponPickup : MonoBehaviour, IMagneticPickup
 {
+    private WeaponItem storedWeapon;
     private WeaponType weaponType;
     private int weaponLevel = 1;
     private float quality;
@@ -682,6 +649,14 @@ public class WeaponPickup : MonoBehaviour, IMagneticPickup
     private float hoverPhase;
     private const float HoverAmplitude = .05f;
     private bool magnetized;
+
+    public void Initialize(WeaponItem item, float lifetime)
+    {
+        Initialize(item.weaponType, item.level, item.quality, item.damage, item.fireInterval,
+            item.projectileSpeed, item.projectilesPerShot, item.spreadAngle, item.explosionRadius, lifetime);
+        storedWeapon = JsonUtility.FromJson<WeaponItem>(JsonUtility.ToJson(item));
+        gameObject.name = item.weaponName;
+    }
 
     public void Initialize(
         WeaponType type,
@@ -765,7 +740,8 @@ public class WeaponPickup : MonoBehaviour, IMagneticPickup
     }
 
     public bool CanCollect(WeaponInventory inventory) =>
-        !collected && inventory != null && inventory.Weapons.Count < inventory.capacity;
+        !CoopSession.IsClient && !collected && inventory != null && inventory.HasItemSpace &&
+        (!TryGetComponent(out DroppedEquipmentPickup dropped) || dropped.Allows(inventory));
 
     public bool TryCollect(Collider collector)
     {
@@ -777,7 +753,7 @@ public class WeaponPickup : MonoBehaviour, IMagneticPickup
         if (!CanCollect(inventory) || player == null || player.IsDead)
             return false;
 
-        WeaponItem weapon = new WeaponItem
+        WeaponItem weapon = storedWeapon ?? new WeaponItem
         {
             weaponName =
             $"{WeaponInventory.GetWeaponTypeName(weaponType)} 等級 {weaponLevel}",
@@ -812,7 +788,8 @@ public static class PickupCollisionUtility
 
         return collider.GetComponentInParent<HealthPickup>() != null ||
                collider.GetComponentInParent<ExperiencePickup>() != null ||
-               collider.GetComponentInParent<WeaponPickup>() != null;
+               collider.GetComponentInParent<WeaponPickup>() != null ||
+               collider.GetComponentInParent<ArmorPickup>() != null;
     }
 
     public static void IgnoreCollisionsWithProjectiles(GameObject pickupObject)
@@ -847,6 +824,7 @@ public static class PickupCollisionUtility
         IgnorePickupType<HealthPickup>(projectileColliders);
         IgnorePickupType<ExperiencePickup>(projectileColliders);
         IgnorePickupType<WeaponPickup>(projectileColliders);
+        IgnorePickupType<ArmorPickup>(projectileColliders);
     }
 
     static void IgnorePickupType<T>(Collider[] projectileColliders) where T : Component

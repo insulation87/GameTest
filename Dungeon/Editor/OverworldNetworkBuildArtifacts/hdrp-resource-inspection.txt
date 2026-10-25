@@ -1,0 +1,3 @@
+Imported asset type: UnityEditor.DefaultAsset
+Shader resource loads in Editor: False
+Active render pipeline: UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset

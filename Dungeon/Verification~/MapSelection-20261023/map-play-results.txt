@@ -1,0 +1,179 @@
+PASS 166 map Play Mode checks
+All four maps are selectable build scenes, each with exactly three stage definitions
+Actual Login scene enters a guest session without network calls
+Test saves use a separate product directory
+Actual UI click: 選擇地圖 (hit 選擇地圖 · 開始新冒險)
+All map cards are available immediately, without unlock prerequisites
+Actual UI click: 返回 (hit 返回)
+Browsing and cancelling map selection does not reset a run or create a save
+Actual UI click: 多人模式 (hit Multiplayer)
+Actual UI click: 合作地圖 (hit 合作地圖)
+Cooperative lobby can select 赤砂遺跡 before starting a room
+Actual UI click: 合作地圖 (hit 合作地圖)
+Cooperative lobby can select 霜雪山境 before starting a room
+Actual UI click: 合作地圖 (hit 合作地圖)
+Cooperative lobby can select 燼火荒原 before starting a room
+Actual UI click: 合作地圖 (hit 合作地圖)
+Cooperative lobby can select 風語林地 before starting a room
+Actual UI click: 返回單人主選單 (hit 返回單人主選單／取消連線)
+Actual UI click: 選擇地圖 (hit 選擇地圖 · 開始新冒險)
+Actual UI click: 以此地圖開始新一輪 (hit 以此地圖開始新一輪)
+Actual UI click: 以此角色出發 (hit 以此角色出發)
+風語林地: chosen map is persisted in camp and retains the wallet
+風語林地: portal confirmation names the selected map
+Actual UI click: 進入遊戲 (hit 進入遊戲)
+Actual UI click: 分裂路線
+
+遠程攻擊分成兩道扇形投射物
+每道 65% 傷害，適合封鎖寬路口。 (hit Upgrade Option)
+風語林地: saved scene loads its themed authored terrain and a grounded live player (theme 0, grounded True, timeScale 1)
+風語林地: three distinct saved stage roots are present
+風語林地: stage 2 and 3 begin locked behind real progression portals
+風語林地: cross-map new runs retain gold and reset to a fresh character loadout
+風語林地: safe navigation and collision in stage 1
+風語林地: a real NPC spawns in stage 1
+風語林地: NPC uses stage-specific levels and baked navigation in stage 1 (floor 1, level 8, onNav True, room Level_1 風語草原, npc (106.59, 0.08, 136.04))
+風語林地: actual enemy health/damage/spawn frequency increase over the preceding map
+風語林地: live damage application uses the selected map's scaled attack strength
+風語林地: stage 1 portal rejects early travel
+風語林地: stage 1 completion opens the real portal to stage 2
+風語林地: safe navigation and collision in stage 2
+風語林地: a real NPC spawns in stage 2
+風語林地: NPC uses stage-specific levels and baked navigation in stage 2 (floor 2, level 48, onNav True, room Level_2 翠葉森林, npc (525.19, 0.08, 123.59))
+風語林地: stage 2 portal rejects early travel
+風語林地: stage 2 completion opens the real portal to stage 3
+風語林地: safe navigation and collision in stage 3
+風語林地: a real NPC spawns in stage 3
+風語林地: NPC uses stage-specific levels and baked navigation in stage 3 (floor 3, level 93, onNav True, room Level_3 暮光古林, npc (948.25, 0.08, 122.30))
+風語林地: scene identity, wallet and stage completion save together
+風語林地: returning to menu is available
+Actual UI click: 繼續遊戲 (hit 加入遊戲 Button)
+風語林地: Continue restores the correct map and third-stage position/progress
+風語林地: completing stage 3 summons its final boss
+風語林地: final boss receives the map health multiplier
+風語林地: defeating all three boss phases completes the selected three-stage map
+Actual UI click: 返回主選單 (hit Return to Main Menu)
+風語林地: map completion ends this run while retaining the profile wallet
+Actual UI click: 選擇地圖 (hit 選擇地圖 · 開始新冒險)
+Actual UI click: 以此地圖開始新一輪 (hit 以此地圖開始新一輪)
+Actual UI click: 以此角色出發 (hit 以此角色出發)
+赤砂遺跡: chosen map is persisted in camp and retains the wallet
+赤砂遺跡: portal confirmation names the selected map
+Actual UI click: 進入遊戲 (hit 進入遊戲)
+Actual UI click: 分裂路線
+
+遠程攻擊分成兩道扇形投射物
+每道 65% 傷害，適合封鎖寬路口。 (hit Upgrade Option)
+赤砂遺跡: saved scene loads its themed authored terrain and a grounded live player (theme 1, grounded True, timeScale 1)
+赤砂遺跡: three distinct saved stage roots are present
+赤砂遺跡: stage 2 and 3 begin locked behind real progression portals
+赤砂遺跡: cross-map new runs retain gold and reset to a fresh character loadout
+赤砂遺跡: safe navigation and collision in stage 1
+赤砂遺跡: a real NPC spawns in stage 1
+赤砂遺跡: NPC uses stage-specific levels and baked navigation in stage 1 (floor 1, level 8, onNav True, room Level_1 赤砂邊境, npc (118.68, 0.08, 121.75))
+赤砂遺跡: actual enemy health/damage/spawn frequency increase over the preceding map
+赤砂遺跡: live damage application uses the selected map's scaled attack strength
+赤砂遺跡: stage 1 portal rejects early travel
+赤砂遺跡: stage 1 completion opens the real portal to stage 2
+赤砂遺跡: safe navigation and collision in stage 2
+赤砂遺跡: a real NPC spawns in stage 2
+赤砂遺跡: NPC uses stage-specific levels and baked navigation in stage 2 (floor 2, level 48, onNav True, room Level_2 斷柱遺城, npc (525.19, 0.08, 123.59))
+赤砂遺跡: stage 2 portal rejects early travel
+赤砂遺跡: stage 2 completion opens the real portal to stage 3
+赤砂遺跡: safe navigation and collision in stage 3
+赤砂遺跡: a real NPC spawns in stage 3
+赤砂遺跡: NPC uses stage-specific levels and baked navigation in stage 3 (floor 3, level 93, onNav True, room Level_3 黃金沙殿, npc (945.19, 0.08, 123.59))
+赤砂遺跡: scene identity, wallet and stage completion save together
+赤砂遺跡: returning to menu is available
+Actual UI click: 繼續遊戲 (hit 加入遊戲 Button)
+赤砂遺跡: Continue restores the correct map and third-stage position/progress
+赤砂遺跡: completing stage 3 summons its final boss
+赤砂遺跡: final boss receives the map health multiplier
+赤砂遺跡: defeating all three boss phases completes the selected three-stage map
+Actual UI click: 返回主選單 (hit Return to Main Menu)
+赤砂遺跡: map completion ends this run while retaining the profile wallet
+Actual UI click: 選擇地圖 (hit 選擇地圖 · 開始新冒險)
+Actual UI click: 以此地圖開始新一輪 (hit 以此地圖開始新一輪)
+Actual UI click: 以此角色出發 (hit 以此角色出發)
+霜雪山境: chosen map is persisted in camp and retains the wallet
+霜雪山境: portal confirmation names the selected map
+Actual UI click: 進入遊戲 (hit 進入遊戲)
+Actual UI click: 貫穿路線
+
+遠程攻擊額外穿透 1 名敵人
+把回聲放在狹長通道，打穿整列敵人。 (hit Upgrade Option)
+霜雪山境: saved scene loads its themed authored terrain and a grounded live player (theme 2, grounded True, timeScale 1)
+霜雪山境: three distinct saved stage roots are present
+霜雪山境: stage 2 and 3 begin locked behind real progression portals
+霜雪山境: cross-map new runs retain gold and reset to a fresh character loadout
+霜雪山境: safe navigation and collision in stage 1
+霜雪山境: a real NPC spawns in stage 1
+霜雪山境: NPC uses stage-specific levels and baked navigation in stage 1 (floor 1, level 8, onNav True, room Level_1 雪松山麓, npc (103.61, 0.08, 127.20))
+霜雪山境: actual enemy health/damage/spawn frequency increase over the preceding map
+霜雪山境: live damage application uses the selected map's scaled attack strength
+霜雪山境: stage 1 portal rejects early travel
+霜雪山境: stage 1 completion opens the real portal to stage 2
+霜雪山境: safe navigation and collision in stage 2
+霜雪山境: a real NPC spawns in stage 2
+霜雪山境: NPC uses stage-specific levels and baked navigation in stage 2 (floor 2, level 48, onNav True, room Level_2 冰晶隘口, npc (528.25, 0.08, 122.30))
+霜雪山境: stage 2 portal rejects early travel
+霜雪山境: stage 2 completion opens the real portal to stage 3
+霜雪山境: safe navigation and collision in stage 3
+霜雪山境: a real NPC spawns in stage 3
+霜雪山境: NPC uses stage-specific levels and baked navigation in stage 3 (floor 3, level 93, onNav True, room Level_3 霜王聖所, npc (958.87, 0.08, 131.05))
+霜雪山境: scene identity, wallet and stage completion save together
+霜雪山境: returning to menu is available
+Actual UI click: 繼續遊戲 (hit 加入遊戲 Button)
+霜雪山境: Continue restores the correct map and third-stage position/progress
+霜雪山境: completing stage 3 summons its final boss
+霜雪山境: final boss receives the map health multiplier
+Snow-map phase-2 boss health can be saved
+Actual UI click: 繼續遊戲 (hit 加入遊戲 Button)
+Reloaded boss keeps its difficulty-scaled health exactly once and restores phase 2
+霜雪山境: defeating all three boss phases completes the selected three-stage map
+Actual UI click: 返回主選單 (hit Return to Main Menu)
+霜雪山境: map completion ends this run while retaining the profile wallet
+Actual UI click: 選擇地圖 (hit 選擇地圖 · 開始新冒險)
+Actual UI click: 以此地圖開始新一輪 (hit 以此地圖開始新一輪)
+Actual UI click: 以此角色出發 (hit 以此角色出發)
+燼火荒原: chosen map is persisted in camp and retains the wallet
+燼火荒原: portal confirmation names the selected map
+Actual UI click: 進入遊戲 (hit 進入遊戲)
+Actual UI click: 貫穿路線
+
+遠程攻擊額外穿透 1 名敵人
+把回聲放在狹長通道，打穿整列敵人。 (hit Upgrade Option)
+燼火荒原: saved scene loads its themed authored terrain and a grounded live player (theme 3, grounded True, timeScale 1)
+燼火荒原: three distinct saved stage roots are present
+燼火荒原: stage 2 and 3 begin locked behind real progression portals
+燼火荒原: cross-map new runs retain gold and reset to a fresh character loadout
+燼火荒原: safe navigation and collision in stage 1
+燼火荒原: a real NPC spawns in stage 1
+燼火荒原: NPC uses stage-specific levels and baked navigation in stage 1 (floor 1, level 8, onNav True, room Level_1 灰燼石原, npc (112.66, 0.08, 135.39))
+燼火荒原: actual enemy health/damage/spawn frequency increase over the preceding map
+燼火荒原: live damage application uses the selected map's scaled attack strength
+燼火荒原: stage 1 portal rejects early travel
+燼火荒原: stage 1 completion opens the real portal to stage 2
+燼火荒原: safe navigation and collision in stage 2
+燼火荒原: a real NPC spawns in stage 2
+燼火荒原: NPC uses stage-specific levels and baked navigation in stage 2 (floor 2, level 48, onNav True, room Level_2 熔光裂谷, npc (525.19, 0.08, 123.59))
+燼火荒原: stage 2 portal rejects early travel
+燼火荒原: stage 2 completion opens the real portal to stage 3
+燼火荒原: safe navigation and collision in stage 3
+燼火荒原: a real NPC spawns in stage 3
+燼火荒原: NPC uses stage-specific levels and baked navigation in stage 3 (floor 3, level 93, onNav True, room Level_3 黑曜王座, npc (943.68, 0.08, 130.40))
+燼火荒原: scene identity, wallet and stage completion save together
+燼火荒原: returning to menu is available
+Actual UI click: 繼續遊戲 (hit 加入遊戲 Button)
+燼火荒原: Continue restores the correct map and third-stage position/progress
+燼火荒原: completing stage 3 summons its final boss
+燼火荒原: final boss receives the map health multiplier
+燼火荒原: defeating all three boss phases completes the selected three-stage map
+Actual UI click: 返回主選單 (hit Return to Main Menu)
+燼火荒原: map completion ends this run while retaining the profile wallet
+Actual UI click: 旅人營地 (hit 旅人營地 · NPC 交易)
+Actual UI click: 以此角色出發 (hit 以此角色出發)
+Actual UI click: 更換地圖 (hit 更換地圖／開始新一輪)
+Actual UI click: 以此地圖開始新一輪 (hit 以此地圖開始新一輪)
+Camp portal can choose another map with an explicit new-run confirmation, preserving gold and resetting gear
+No runtime errors/exceptions occurred during map selection, all 12 stages, portal travel, save/continue and final victories

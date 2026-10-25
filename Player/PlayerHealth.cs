@@ -1,13 +1,14 @@
-using System.Collections;
+﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
-public class PlayerHealth : MonoBehaviour
+public partial class PlayerHealth : MonoBehaviour
 {
     enum UpgradeType
     {
+        SkillPower, SkillHaste, SkillMastery,
         Inventory,
         Attack,
         CriticalDamage,
@@ -15,7 +16,8 @@ public class PlayerHealth : MonoBehaviour
         DoubleJump,
         MoveSpeed,
         MaxArmor,
-        ArmorRegeneration
+        ArmorRegeneration,
+        TacticalPierce, TacticalRicochet, TacticalSplit
     }
 
     class UpgradeOption
@@ -47,6 +49,8 @@ public class PlayerHealth : MonoBehaviour
     [Min(1f)] public float criticalDamageMultiplier = 1.5f;
     [Min(0)] public int bulletPenetration;
     public bool hasDoubleJump;
+    public TacticalShotStyle ShotStyle { get; private set; }
+    public bool ExpeditionKitReceived { get; set; }
 
     [Header("Death")]
     public bool respawnOnDeath = true;
@@ -125,17 +129,35 @@ public class PlayerHealth : MonoBehaviour
 
     void Update()
     {
+        if (CoopSession.IsClient) return;
+        var teammate = CoopInput.Actor(this);
+        if (teammate != null && !teammate.Local && !teammate.HasRemoteInput) return;
         RegenerateArmor();
     }
 
     public void TakeDamage(float damage)
     {
-        if (damage <= 0f || IsDead || IsInvincible)
+        if (CoopSession.IsClient) return;
+        var remote = CoopInput.Actor(this);
+        if (remote != null && !remote.Local && !remote.HasRemoteInput) return;
+        if (damage <= 0f || IsDead || IsInvincible || DungeonVictoryUI.IsOpen)
             return;
+
+        float originalDamage = damage;
+        damage *= GetComponent<CharacterSkills>()?.IncomingDamageMultiplier ?? 1f;
+        if (damage <= 0f) return;
 
         WeaponBuildSystem build = GetComponent<WeaponBuildSystem>();
         if (build != null)
             damage *= build.IncomingDamageMultiplier;
+        damage *= TacticalField.Protection(this);
+        if (damage < originalDamage) GetComponent<TacticalEquipment>()?.OnBlockedDamage();
+        RogueTactics tactics = GetComponent<RogueTactics>();
+        if (tactics != null)
+        {
+            damage *= tactics.IncomingDamageMultiplier;
+            tactics.OnDamageTaken();
+        }
 
         lastDamageTime = Time.time;
         float absorbedDamage = Mathf.Min(currentArmor, damage);
@@ -149,7 +171,7 @@ public class PlayerHealth : MonoBehaviour
 
     public void KillInstantly()
     {
-        if (!IsDead)
+        if (!IsDead && !DungeonVictoryUI.IsOpen)
         {
             currentArmor = 0f;
             currentHealth = 0f;
@@ -166,13 +188,13 @@ public class PlayerHealth : MonoBehaviour
         currentHealth = Mathf.Min(maxHealth, currentHealth + amount);
     }
 
-    public void ApplyEquipmentArmorBonus(float difference)
+    public void ApplyEquipmentArmorBonus(float difference, bool restoreArmor = true)
     {
         if (Mathf.Approximately(difference, 0f))
             return;
 
         maxArmor = Mathf.Max(0f, maxArmor + difference);
-        if (difference > 0f)
+        if (difference > 0f && restoreArmor)
             currentArmor = Mathf.Min(maxArmor, currentArmor + difference);
         else
             currentArmor = Mathf.Min(currentArmor, maxArmor);
@@ -201,6 +223,7 @@ public class PlayerHealth : MonoBehaviour
             currentExperience -= ExperienceToNextLevel;
             currentLevel++;
 
+            // Every new run receives its opening choice in camp before departure.
             if (currentLevel % 5 == 0)
                 pendingUpgradeChoices++;
         }
@@ -249,6 +272,11 @@ public class PlayerHealth : MonoBehaviour
     {
         GameAudio.UI(GameSound.PlayerDeath);
         IsDead = true;
+        GetComponent<RogueTactics>()?.ResetTransientState();
+        GetComponent<CombatMomentum>()?.ResetCombat();
+        GetComponent<CharacterSkills>()?.CancelEffects();
+        GetComponent<TacticalEquipment>()?.ResetTransientState();
+        TacticalField.ClearOwned(this);
 
         if (!respawnOnDeath)
         {
@@ -318,7 +346,7 @@ public class PlayerHealth : MonoBehaviour
             return;
 
         timeScaleBeforeDeath = Time.timeScale;
-        Time.timeScale = 0f;
+        if (!CoopSession.IsOnline) Time.timeScale = 0f;
         worldIsPausedByDeath = true;
     }
 
@@ -349,8 +377,9 @@ public class PlayerHealth : MonoBehaviour
         BuildUpgradeCanvas();
         PopulateUpgradeChoices();
 
-        timeScaleBeforeUpgrade = Time.timeScale;
-        Time.timeScale = 0f;
+        // Starter-kit and restored upgrade choices can open behind the loading overlay's pause.
+        timeScaleBeforeUpgrade = GameSceneFlow.IsLoading ? 1f : Time.timeScale;
+        if (!CoopSession.IsOnline) Time.timeScale = 0f;
         upgradePanel.SetActive(true);
         RefreshCursor();
     }
@@ -369,6 +398,7 @@ public class PlayerHealth : MonoBehaviour
         );
 
         Canvas canvas = upgradeCanvas.GetComponent<Canvas>();
+        upgradeCanvas.transform.SetParent(transform, false);
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 2000;
 
@@ -419,11 +449,27 @@ public class PlayerHealth : MonoBehaviour
             upgradeButtons.Add(button);
         }
 
+        GameUITheme.Surface(upgradePanel);
+        GameUITheme.StyleTree(upgradeCanvas);
         upgradePanel.SetActive(false);
     }
 
     void PopulateUpgradeChoices()
     {
+        if (GetComponent<CharacterSkills>() != null)
+        {
+            var skills = GetComponent<CharacterSkills>();
+            var skillTypes = new[] { UpgradeType.SkillPower, UpgradeType.SkillHaste, UpgradeType.SkillMastery };
+            upgradeTitle.text = skills.Character.Name + " · " + skills.Character.Skill + " 升級";
+            for (int i = 0; i < upgradeButtons.Count; i++)
+            {
+                var option = new UpgradeOption { type = skillTypes[i], title = "", description = CharacterSkillUpgrades.Label(skills.Character.Id, i) };
+                coopOptions[i] = option;
+                var button = upgradeButtons[i]; button.onClick.RemoveAllListeners(); button.onClick.AddListener(() => SelectUpgrade(option));
+                button.GetComponentInChildren<Text>().text = option.description;
+            }
+            return;
+        }
         int tier = Mathf.Clamp(1 + currentLevel / 20, 1, 6);
         List<UpgradeType> types = new List<UpgradeType>
         {
@@ -438,6 +484,8 @@ public class PlayerHealth : MonoBehaviour
 
         if (!hasDoubleJump)
             types.Add(UpgradeType.DoubleJump);
+        if (ShotStyle == TacticalShotStyle.None)
+            types = new List<UpgradeType> { UpgradeType.TacticalPierce, UpgradeType.TacticalRicochet, UpgradeType.TacticalSplit };
 
         for (int typeIndex = 0; typeIndex < types.Count; typeIndex++)
         {
@@ -452,6 +500,7 @@ public class PlayerHealth : MonoBehaviour
         for (int buttonIndex = 0; buttonIndex < upgradeButtons.Count; buttonIndex++)
         {
             UpgradeOption option = CreateUpgradeOption(types[buttonIndex], tier);
+            coopOptions[buttonIndex] = option;
             Button button = upgradeButtons[buttonIndex];
             button.onClick.RemoveAllListeners();
             button.onClick.AddListener(() => SelectUpgrade(option));
@@ -465,6 +514,12 @@ public class PlayerHealth : MonoBehaviour
     {
         switch (type)
         {
+            case UpgradeType.TacticalPierce:
+                return new UpgradeOption { type = type, title = "貫穿路線", description = "遠程攻擊額外穿透 1 名敵人\n把回聲放在狹長通道，打穿整列敵人。" };
+            case UpgradeType.TacticalRicochet:
+                return new UpgradeOption { type = type, title = "彈射路線", description = "非爆炸投射物命中後彈向 9 公尺內可見敵人 1 次\n單發傷害降為 80%，適合側襲與包圍戰。" };
+            case UpgradeType.TacticalSplit:
+                return new UpgradeOption { type = type, title = "分裂路線", description = "遠程攻擊分成兩道扇形投射物\n每道 65% 傷害，適合封鎖寬路口。" };
             case UpgradeType.Inventory:
             {
                 int slots = 2 + tier;
@@ -556,9 +611,16 @@ public class PlayerHealth : MonoBehaviour
 
     void SelectUpgrade(UpgradeOption option)
     {
+        if (CoopSession.Upgrade(this, System.Array.IndexOf(coopOptions, option))) return;
         GameAudio.UI(GameSound.Upgrade);
         switch (option.type)
         {
+            case UpgradeType.SkillPower: GetComponent<CharacterSkills>().ApplySkillUpgrade(0); break;
+            case UpgradeType.SkillHaste: GetComponent<CharacterSkills>().ApplySkillUpgrade(1); break;
+            case UpgradeType.SkillMastery: GetComponent<CharacterSkills>().ApplySkillUpgrade(2); break;
+            case UpgradeType.TacticalPierce: ShotStyle = TacticalShotStyle.Pierce; break;
+            case UpgradeType.TacticalRicochet: ShotStyle = TacticalShotStyle.Ricochet; break;
+            case UpgradeType.TacticalSplit: ShotStyle = TacticalShotStyle.Split; break;
             case UpgradeType.Inventory:
                 WeaponInventory inventory = GetComponent<WeaponInventory>();
                 if (inventory != null)
@@ -598,7 +660,7 @@ public class PlayerHealth : MonoBehaviour
             return;
 
         upgradePanel.SetActive(false);
-        Time.timeScale = timeScaleBeforeUpgrade;
+        if (!CoopSession.IsOnline) Time.timeScale = GameSceneFlow.IsLoading || DungeonVictoryUI.IsOpen || worldIsPausedByDeath ? 0f : timeScaleBeforeUpgrade;
         RefreshCursor();
 
         if (showPendingChoice && pendingUpgradeChoices > 0)
@@ -719,7 +781,7 @@ public class PlayerHealth : MonoBehaviour
         backgroundRect.offsetMax = Vector2.zero;
 
         Image background = backgroundObject.GetComponent<Image>();
-        background.color = new Color(0f, 0f, 0f, 0.75f);
+        background.color = new Color(GameUITheme.Ink.r, GameUITheme.Ink.g, GameUITheme.Ink.b, .9f);
         background.raycastTarget = false;
 
         GameObject textObject = new GameObject(
@@ -739,8 +801,9 @@ public class PlayerHealth : MonoBehaviour
         respawnText.fontSize = 54;
         respawnText.fontStyle = FontStyle.Bold;
         respawnText.alignment = TextAnchor.MiddleCenter;
-        respawnText.color = Color.white;
+        respawnText.color = GameUITheme.Ivory;
         respawnText.raycastTarget = false;
+        GameUITheme.FitCanvas(scaler);
     }
 
     void SetRespawnCanvasVisible(bool visible)

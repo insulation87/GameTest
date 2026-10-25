@@ -1,0 +1,37 @@
+2026-10-09 Friends service regression
+Unity 6000.3.10f1: independent batch Play Mode, real service and UI, mock Auth/Friends transport.
+User scenes and player saves were not used.
+Full current runtime sources compiled successfully.
+Production probe (anonymous, null operation): HTTP 404 / PGRST202; game_social RPC missing from schema cache.
+Production backend was not changed; no browser/admin session available.
+
+PASS Checks execute in Unity Play Mode
+PASS Isolated account login starts
+PASS Account login completes
+PASS Pending list disables repeated actions
+PASS Missing RPC is identified explicitly
+PASS Raw server response is not displayed
+PASS Failed list is not presented as an empty list
+PASS Unavailable service offers retry and disables unusable actions
+PASS Missing RPC is not polled automatically
+PASS Retry recovers after backend becomes available
+PASS Successful empty list enables actions
+PASS Invalid friend codes are rejected locally
+PASS Invite UI sends normalized code and shows pending request
+PASS Outgoing invite renders in the list
+PASS Accept UI moves incoming invitation to friends
+PASS Remove UI refreshes the list
+PASS Network failure leaves retry available
+PASS Expired login has a distinct error
+PASS Logout clears friend state and loading flags
+PASS Logout closes the friends menu
+PASS All mock responses consumed without runtime errors
+PASS 21 Play Mode checks
+
+Unity Editor Search startup exceptions (outside gameplay): 1
+Exception stack: UnityEditor.Search.SearchInit.IndexationOnStartup; recorded separately.
+No game runtime errors during the 21 checks.
+No graphics/layout inspection in the headless run.
+Production two-account invite and acceptance remain unverified until migration is applied.
+
+PostgreSQL: fresh loopback-only cluster, migration applied twice, permissions/consent/duplicate/self-invite/outsider/name/removal checks passed.

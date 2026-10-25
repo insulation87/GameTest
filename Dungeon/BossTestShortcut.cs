@@ -14,7 +14,7 @@ public class BossTestShortcut : MonoBehaviour
     {
         Keyboard keyboard = Keyboard.current;
         PlayerHealth health = GetComponent<PlayerHealth>();
-        if (!Application.isFocused || keyboard == null || health == null ||
+        if (DungeonVictoryUI.IsOpen || !Application.isFocused || keyboard == null || health == null ||
             health.IsDead || health.IsChoosingUpgrade ||
             !(keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed) ||
             !(keyboard.leftCtrlKey.isPressed || keyboard.rightCtrlKey.isPressed))
@@ -47,7 +47,7 @@ public class BossTestShortcut : MonoBehaviour
         Player player = GetComponent<Player>();
         PlayerHealth health = GetComponent<PlayerHealth>();
         WeaponInventory inventory = GetComponent<WeaponInventory>();
-        if (player == null || !player.isActiveAndEnabled || health == null ||
+        if (DungeonVictoryUI.IsOpen || player == null || !player.isActiveAndEnabled || health == null ||
             health.IsDead || health.IsChoosingUpgrade || inventory == null)
         {
             Debug.LogWarning("首領測試快捷鍵需要存活的玩家、武器背包與地城場景。", this);

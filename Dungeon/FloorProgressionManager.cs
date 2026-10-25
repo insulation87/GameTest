@@ -3,13 +3,13 @@ using UnityEngine;
 using UnityEngine.AI;
 using MedievalDungeonKit;
 
-public class FloorProgressionManager : MonoBehaviour
+public partial class FloorProgressionManager : MonoBehaviour
 {
     public static FloorProgressionManager Instance { get; private set; }
 
     [Header("Required Items")]
-    [Min(1)] public int floorOneRequired = 3;
-    [Min(1)] public int floorTwoRequired = 6;
+    [Min(1)] public int floorOneRequired = 10;
+    [Min(1)] public int floorTwoRequired = 20;
     [Min(1)] public int floorThreeRequired = 9;
 
     [Header("Automatic Air Walls")]
@@ -137,13 +137,17 @@ public class FloorProgressionManager : MonoBehaviour
 
     void BuildProgressionObjects()
     {
+        OverworldDirector world = OverworldDirector.EnsureWorld();
         Transform stairOneTop = FindNamedTransform("Stair_1_Top");
         Transform stairTwoTop = FindNamedTransform("Stair_2_Top");
         DungeonMarker bossMarker = FindBossMarker();
 
-        floorTwoWall = CreateAirWall("Floor 2 Air Wall", stairOneTop, stairWallSize);
-        floorThreeWall = CreateAirWall("Floor 3 Air Wall", stairTwoTop, stairWallSize);
-        bossWall = CreateAirWall("Boss Room Air Wall", bossMarker != null ? bossMarker.transform : null, bossWallSize);
+        if (world == null)
+        {
+            floorTwoWall = CreateAirWall("Floor 2 Air Wall", stairOneTop, stairWallSize);
+            floorThreeWall = CreateAirWall("Floor 3 Air Wall", stairTwoTop, stairWallSize);
+            bossWall = CreateAirWall("Boss Room Air Wall", bossMarker != null ? bossMarker.transform : null, bossWallSize);
+        }
 
         if (bossMarker != null)
         {

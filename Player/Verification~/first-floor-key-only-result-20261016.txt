@@ -1,0 +1,56 @@
+PASS
+PASS Checks run inside actual Unity Editor Play Mode
+PASS Persistent directory and active save are isolated from user progress
+PASS Actual Map1 initializes tactical encounters
+PASS First tactical level-up remains available without equipment gifts
+PASS New run retains only its character starting weapon
+PASS First-region starter grants no armor
+PASS Returning player keeps all owned and equipped items; starter grants add none
+PASS Actual Map1 encounter starts: 0
+PASS Real death paths complete encounter and all waves: 0
+PASS First-region encounter 0 produces no weapon, armor, health or XP pickups
+PASS Encounter 0 grants keys without extra equipment or gold
+PASS Actual Map1 encounter starts: 1
+PASS Real death paths complete encounter and all waves: 1
+PASS First-region encounter 1 produces no weapon, armor, health or XP pickups
+PASS Encounter 1 grants keys without extra equipment or gold
+PASS Actual Map1 encounter starts: 2
+PASS Real death paths complete encounter and all waves: 2
+PASS First-region encounter 2 produces no weapon, armor, health or XP pickups
+PASS Encounter 2 grants keys without extra equipment or gold
+PASS First-region guaranteed keys still unlock the second region
+PASS First-region trial boss remains a practice encounter
+PASS Completed encounters cannot duplicate their key rewards
+PASS Actual production prefab lethal-damage path, floor 1
+PASS First-floor death suppresses all other pickups even with every drop chance forced to 100%
+PASS First-floor death retains the keystone drop
+PASS First-floor XP goes directly to the killer once (before=0, after=7, level=4)
+PASS Actual first-floor keystone can still be collected
+PASS Actual production prefab lethal-damage path, floor 1
+PASS Environmental first-floor death leaves no other pickups
+PASS Environmental kill XP goes directly to the nearest living player
+PASS A failed key roll does not create a replacement item
+PASS Actual production prefab lethal-damage path, floor 2
+PASS Floor 2 retains every original loot category
+PASS Later-floor experience still requires pickup
+PASS Later-floor experience pickup remains usable
+PASS Actual production prefab lethal-damage path, floor 3
+PASS Floor 3 retains every original loot category
+PASS Later-floor experience still requires pickup
+PASS Later-floor experience pickup remains usable
+PASS Actual Map1 provides chest candidate rooms
+PASS Player reaches an actual navigable room on floor 1
+PASS First-floor room cannot spawn a weapon chest
+PASS Existing first-floor chest cannot bypass the key-only loot rule
+PASS Player reaches an actual navigable room on floor 2
+PASS Floor 2 still spawns a real chest on safe NavMesh and floor geometry
+PASS Breaking a floor 2 chest still yields exactly one weapon
+PASS Broken chest cannot duplicate its reward
+PASS Player reaches an actual navigable room on floor 3
+PASS Floor 3 still spawns a real chest on safe NavMesh and floor geometry
+PASS Breaking a floor 3 chest still yields exactly one weapon
+PASS Broken chest cannot duplicate its reward
+PASS Updated progression saves to isolated file
+PASS Isolated save can be read: 
+PASS Saved inventory and first-region progression remain intact
+PASS No unexpected game/runtime errors: 

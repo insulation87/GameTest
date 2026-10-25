@@ -6,7 +6,9 @@ using UnityEngine.AI;
 [DisallowMultipleComponent]
 public class EnemyCharacterVisual : MonoBehaviour
 {
-    [Tooltip("Optional appearance override. Leave empty to use the generated NPC/BOSS models.")]
+    [Tooltip("Use the generated goblin, orc and forest imp appearances for regular enemies.")]
+    public bool useFantasyMonsters = true;
+    [Tooltip("Optional appearance override for bosses or when Use Fantasy Monsters is disabled.")]
     public GameObject modelPrefab;
     private GameObject model;
     private EnemyAI enemyAI;
@@ -44,21 +46,16 @@ public class EnemyCharacterVisual : MonoBehaviour
         boss = GetComponent<BossController>();
         agent = GetComponent<NavMeshAgent>();
         int level = health != null ? health.EnemyLevel : 1;
-        string appearance = boss != null ? "Boss" : level <= 20 ? "Npc1" : level <= 50 ? "Npc2" : "Npc3";
-        GameObject prefab = modelPrefab != null ? modelPrefab :
-            Resources.Load<GameObject>("Characters/Enemies/" + appearance);
-        if (prefab == null)
-        {
-            Debug.LogError("Missing enemy appearance: " + appearance, this);
-            enabled = false;
-            return; // Keep the existing body visible if the asset is unavailable.
-        }
+        string appearance = boss != null ? "Boss" : useFantasyMonsters
+            ? (level <= 20 ? "Goblin" : level <= 50 ? "Orc" : "ForestImp")
+            : (level <= 20 ? "Npc1" : level <= 50 ? "Npc2" : "Npc3");
 
         // Only replace the root placeholder. Do not hide attached weapons or UI.
         foreach (Renderer renderer in GetComponents<Renderer>())
             if (renderer.enabled) { placeholders.Add(renderer); renderer.enabled = false; }
-        model = Instantiate(prefab, transform, false);
-        model.name = boss != null ? "Boss Appearance" : "NPC Appearance";
+        model = modelPrefab != null && (boss != null || !useFantasyMonsters) ? Instantiate(modelPrefab, transform, false) :
+            PixelCharacterFactory.Create(transform, appearance);
+        model.name = boss != null ? "Boss Appearance" : appearance + " Appearance";
         float height = 2f;
         float footHeight = agent != null ? -agent.baseOffset : -1f;
         if (TryGetComponent(out CapsuleCollider capsule) && capsule.direction == 1)
@@ -217,7 +214,7 @@ public class EnemyCharacterVisual : MonoBehaviour
     }
     void CreateAbyssHalo()
     {
-        Shader shader = Shader.Find("GameTest/AnimeToon");
+        Shader shader = Resources.Load<Shader>("PixelSurface");
         if (shader == null) return;
         haloMaterial = new Material(shader) { name = "Abyss Halo (Runtime)" };
         haloMaterial.SetColor("_Color", new Color(.85f, .25f, 1.6f));
@@ -236,7 +233,8 @@ public class EnemyCharacterVisual : MonoBehaviour
             for (int point = 0; point < 17; point++)
             {
                 float angle = (arc * 90f + point * 4f) * Mathf.Deg2Rad;
-                line.SetPosition(point, new Vector3(Mathf.Cos(angle), Mathf.Sin(angle), 0f) * .55f);
+                line.SetPosition(point, new Vector3(Mathf.Round(Mathf.Cos(angle) * .55f / .08f),
+                    Mathf.Round(Mathf.Sin(angle) * .55f / .08f), 0f) * .08f);
             }
         }
     }

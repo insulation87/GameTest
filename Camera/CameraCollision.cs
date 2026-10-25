@@ -1,94 +1,26 @@
 using UnityEngine;
 
-[DefaultExecutionOrder(100)]
-public class CameraCollision : MonoBehaviour
+// Keep both camera rigs on the player's side of solid scenery, including during smoothing.
+public static class CameraCollision
 {
-    public Transform target;
-    public Vector3 targetOffset = new Vector3(0f, 1.2f, 0f);
-    public float distance = 5f;
-    public float minDistance = 1.0f;
-    public float smooth = 10f;
-    public float wallPadding = 0.15f;
-    public LayerMask collisionLayer;
-    private float currentDistance;
-    private float distanceVelocity;
-    private Player playerController;
-
-    void OnEnable()
+    static readonly RaycastHit[] hits = new RaycastHit[64];
+    public static Vector3 Resolve(Transform owner,Vector3 pivot,Vector3 wanted,Camera view)
     {
-        if (target != null)
-            playerController = target.GetComponentInParent<Player>();
-
-        Vector3 desiredPosition = GetDesiredPosition();
-        currentDistance = target == null
-            ? distance
-            : Vector3.Distance(GetTargetPosition(), desiredPosition);
-        distanceVelocity = 0f;
-    }
-
-    void LateUpdate()
-    {
-        if (target == null)
-            return;
-
-        Vector3 rayOrigin = GetTargetPosition();
-        Vector3 desiredPosition = GetDesiredPosition();
-        Vector3 desiredVector = desiredPosition - rayOrigin;
-        float desiredDistance = desiredVector.magnitude;
-
-        if (desiredDistance <= Mathf.Epsilon)
-            return;
-
-        Vector3 desiredDir = desiredVector / desiredDistance;
-
-        float targetDistance = desiredDistance;
-        if (Physics.Raycast(
-            rayOrigin,
-            desiredDir,
-            out RaycastHit hit,
-            desiredDistance,
-            collisionLayer,
-            QueryTriggerInteraction.Ignore))
+        Vector3 delta = wanted - pivot; float distance = delta.magnitude;
+        if (distance < .001f) return pivot;
+        Vector3 direction = delta / distance;
+        int count = Physics.SphereCastNonAlloc(pivot,.12f,direction,hits,distance,Physics.AllLayers,QueryTriggerInteraction.Ignore);
+        float safeDistance = distance;
+        float clearance = .03f + (view != null ? view.nearClipPlane : .1f);
+        for (int i = 0; i < count; i++)
         {
-            targetDistance = Mathf.Clamp(
-                hit.distance - wallPadding,
-                minDistance,
-                desiredDistance
-            );
+            Collider other = hits[i].collider;
+            if (other == null || owner != null && other.transform.IsChildOf(owner) ||
+                other.GetComponentInParent<Player>() != null || other.GetComponentInParent<EnemyHealth>() != null ||
+                other.GetComponentInParent<Projectile>() != null || PickupCollisionUtility.IsPickup(other)) continue;
+            safeDistance = Mathf.Min(safeDistance,Mathf.Max(0,hits[i].distance - clearance));
         }
-
-        float smoothTime = 1f / Mathf.Max(0.01f, smooth);
-        currentDistance = Mathf.SmoothDamp(
-            currentDistance,
-            targetDistance,
-            ref distanceVelocity,
-            smoothTime
-        );
-
-        transform.position = rayOrigin + desiredDir * currentDistance;
-    }
-
-    Vector3 GetDesiredPosition()
-    {
-        return transform.parent != null ? transform.parent.position : transform.position;
-    }
-
-    Vector3 GetTargetPosition()
-    {
-        if (playerController == null && target != null)
-            playerController = target.GetComponentInParent<Player>();
-
-        float stanceOffset = playerController != null
-            ? playerController.CameraHeightOffset
-            : 0f;
-        return target.position + targetOffset + Vector3.up * stanceOffset;
-    }
-
-    void OnValidate()
-    {
-        distance = Mathf.Max(0.1f, distance);
-        minDistance = Mathf.Max(0.01f, minDistance);
-        smooth = Mathf.Max(0.01f, smooth);
-        wallPadding = Mathf.Max(0f, wallPadding);
+        if(count == hits.Length) safeDistance = 0;
+        return pivot + direction * safeDistance;
     }
 }

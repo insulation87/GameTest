@@ -11,9 +11,8 @@ public class EnemyProjectile : MonoBehaviour
     public static void Launch(Vector3 origin, Vector3 direction, float speed, float damage, float lifetime, GameObject owner)
     {
         if (direction.sqrMagnitude < 0.0001f) return;
-        GameObject prefab = Resources.Load<GameObject>("Characters/Enemies/Weapons/Bolt");
-        if (prefab == null) { Debug.LogError("Missing medieval Bolt prefab."); return; }
-        GameObject bolt = Instantiate(prefab, origin, Quaternion.LookRotation(direction));
+        GameObject bolt = PixelCharacterFactory.CreateBolt(null);
+        bolt.transform.SetPositionAndRotation(origin, Quaternion.LookRotation(direction));
         EnemyProjectile projectile = bolt.AddComponent<EnemyProjectile>();
         projectile.owner = owner; projectile.velocity = direction.normalized * speed; projectile.damage = damage;
         Destroy(bolt, Mathf.Max(0.1f, lifetime));

@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 
 // One mesh definition supplies held models, loot and inventory silhouettes.
@@ -6,14 +6,16 @@ using UnityEngine;
 public static class ItemAppearance
 {
     public const int HealthPack = 7;
-    static readonly Mesh[] meshes = new Mesh[8];
+    public const int TreasureChest = 8;
+    public const int ChestFragment = 9;
+    public const int ArmorStart = 20;
+    static readonly Mesh[] meshes = new Mesh[24];
     static Material material;
     static readonly Color Steel = new Color(.34f, .41f, .49f);
     static readonly Color Dark = new Color(.075f, .095f, .12f);
     static readonly Color Rubber = new Color(.13f, .16f, .18f);
     static readonly Color Silver = new Color(.68f, .75f, .8f);
     static readonly Color Wood = new Color(.48f, .23f, .105f);
-    static readonly Color Olive = new Color(.34f, .4f, .18f);
     static readonly Color Brass = new Color(.87f, .64f, .23f);
     static readonly Color Glass = new Color(.12f, .75f, .85f);
 
@@ -25,7 +27,8 @@ public static class ItemAppearance
             material.name = "Equipment shared surface";
             material.hideFlags = HideFlags.HideAndDontSave;
         }
-        var model = new GameObject(item == HealthPack ? "Medical Kit" : ((WeaponType)item) + " Model",
+        var model = new GameObject(item == HealthPack ? "Medical Kit" : item == TreasureChest ? "Treasure Chest" :
+            item == ChestFragment ? "Chest Fragment" : item >= ArmorStart ? ArmorLoot.SlotName((ArmorSlot)(item - ArmorStart)) + " Model" : ((WeaponType)item) + " Model",
             typeof(MeshFilter), typeof(MeshRenderer));
         model.transform.SetParent(parent, false);
         model.GetComponent<MeshFilter>().sharedMesh = GetMesh(item);
@@ -35,140 +38,145 @@ public static class ItemAppearance
 
     public static Mesh GetMesh(int item)
     {
-        item = Mathf.Clamp(item, 0, HealthPack);
+        item = Mathf.Clamp(item, 0, meshes.Length - 1);
+        if (item < HealthPack) item = (int)CharacterWeapons.Migrate((WeaponType)item);
         if (meshes[item] == null)
         {
             var shape = new Shape();
             if (item == HealthPack) MedicalKit(shape);
+            else if (item == TreasureChest) Chest(shape);
+            else if (item == ChestFragment) shape.Box(Vector3.zero, new Vector3(.28f, .1f, .18f), Wood);
+            else if (item >= ArmorStart) Armor(shape, (ArmorSlot)(item - ArmorStart));
             else Weapon(shape, (WeaponType)item);
-            meshes[item] = shape.ToMesh(item == HealthPack ? "Medical Kit" : ((WeaponType)item).ToString());
+            meshes[item] = shape.ToMesh(item == HealthPack ? "Medical Kit" : item == TreasureChest ? "Treasure Chest" :
+                item == ChestFragment ? "Chest Fragment" : item >= ArmorStart ? ((ArmorSlot)(item - ArmorStart)).ToString() : ((WeaponType)item).ToString());
         }
         return meshes[item];
     }
 
+    static void Chest(Shape s)
+    {
+        // Oak planks, iron feet, brass straps and a turquoise lock. Origin at floor level.
+        s.Box(new Vector3(0, .47f, 0), new Vector3(1.6f, .78f, 1.04f), Dark);
+        for (int i = 0; i < 4; i++)
+            s.Box(new Vector3((i - 1.5f) * .385f, .47f, 0), new Vector3(.37f, .73f, 1.06f), Wood);
+        s.Box(new Vector3(0, .89f, 0), new Vector3(1.62f, .12f, 1.08f), Brass);
+        s.Box(new Vector3(0, 1.02f, 0), new Vector3(1.56f, .18f, .78f), Wood);
+        foreach (float side in new[] { -1f, 1f })
+        {
+            s.Box(new Vector3(0, .98f, side * .43f), new Vector3(1.56f, .14f, .3f), Wood, new Vector3(side * 32, 0, 0));
+            s.Box(new Vector3(side * .56f, .52f, 0), new Vector3(.12f, .86f, 1.1f), Brass);
+            s.Box(new Vector3(side * .56f, 1.02f, 0), new Vector3(.13f, .22f, .82f), Brass);
+            foreach (float z in new[] { -.4f, .4f })
+                s.Box(new Vector3(side * .66f, .08f, z), new Vector3(.22f, .16f, .24f), Steel);
+            for (int i = 0; i < 3; i++)
+                s.Box(new Vector3(side * .56f, .27f + i * .24f, -.57f), Vector3.one * .055f, Silver);
+        }
+        s.Box(new Vector3(0, .78f, -.58f), new Vector3(.27f, .3f, .09f), Brass);
+        s.Box(new Vector3(0, .78f, -.635f), new Vector3(.1f, .13f, .025f), Glass, new Vector3(0, 0, 45));
+    }
+
     static void Weapon(Shape s, WeaponType type)
     {
-        if (type == WeaponType.RPG)
+        type = CharacterWeapons.Migrate(type);
+        Color accent = CharacterRoster.All[(int)type - 10].Color;
+        if (type == WeaponType.WarHammer)
         {
-            s.Tube(new Vector3(0,.055f,-.05f), .092f, .96f, Olive);
-            s.Tube(new Vector3(0,.055f,-.52f), .115f, .08f, Steel);
-            s.Tube(new Vector3(0,.055f,.43f), .105f, .07f, Steel);
-            s.Tube(new Vector3(0,.055f,.473f), .078f, .008f, Dark);
-            s.Tube(new Vector3(0,.055f,.51f), .048f, .1f, Brass);
-            s.Tube(new Vector3(0,.055f,.63f), .09f, .19f, Olive, .022f);
-            s.Box(new Vector3(0,-.105f,-.13f), new Vector3(.12f,.12f,.34f), Wood);
-            Grip(s, .13f, Rubber);
-            s.Box(new Vector3(0,.19f,.08f), new Vector3(.045f,.15f,.035f), Steel);
-            s.Box(new Vector3(0,.27f,.08f), new Vector3(.1f,.025f,.035f), Silver);
-            s.Box(new Vector3(0,-.09f,-.38f), new Vector3(.16f,.07f,.16f), Rubber);
-            return;
+            s.Box(new Vector3(0, -.08f, 0), new Vector3(.09f, .85f, .09f), Wood);
+            s.Box(new Vector3(0, .42f, 0), new Vector3(.55f, .28f, .25f), Steel);
+            s.Box(new Vector3(0, .42f, -.14f), new Vector3(.2f, .15f, .035f), accent);
+            s.Box(new Vector3(0, -.35f, 0), new Vector3(.12f, .25f, .12f), Dark);
         }
-
-        bool pistol = type == WeaponType.Pistol;
-        bool smg = type == WeaponType.SubmachineGun;
-        bool shotgun = type == WeaponType.Shotgun;
-        bool sniper = type == WeaponType.SniperRifle;
-        bool lmg = type == WeaponType.LightMachineGun;
-        Color accent = shotgun ? Wood : sniper || lmg ? Olive : smg ? new Color(.22f,.42f,.46f) : Steel;
-        float receiverLength = pistol ? .25f : smg ? .31f : .39f;
-        float barrelEnd = pistol ? .23f : smg ? .4f : sniper ? .91f : shotgun ? .77f : lmg ? .79f : .64f;
-
-        s.Box(new Vector3(0,.045f,0), new Vector3(pistol ? .075f : .105f,.115f,receiverLength), accent);
-        s.Box(new Vector3(0,.11f,0), new Vector3(.073f,.027f,receiverLength * .94f), Silver);
-        s.Box(new Vector3(.055f,.048f,.055f), new Vector3(.009f,.045f,.095f), Dark);
-        s.Box(new Vector3(.063f,.05f,-.04f), new Vector3(.035f,.022f,.038f), Silver);
-        Grip(s, -.08f, Rubber);
-        // Open trigger guard, with an inset trigger.
-        s.Box(new Vector3(0,-.128f,.055f), new Vector3(.045f,.018f,.13f), Steel);
-        s.Box(new Vector3(0,-.081f,.12f), new Vector3(.045f,.11f,.018f), Steel);
-        s.Box(new Vector3(0,-.065f,.035f), new Vector3(.016f,.06f,.015f), Dark, new Vector3(-18,0,0));
-        float barrelStart = receiverLength * .42f;
-        s.Tube(new Vector3(0,.06f,(barrelStart + barrelEnd) * .5f), shotgun ? .035f : .023f,
-            barrelEnd - barrelStart, Steel);
-        s.Tube(new Vector3(0,.06f,barrelEnd), pistol ? .03f : .039f, .055f, Dark);
-        s.Tube(new Vector3(0,.06f,barrelEnd + .028f), pistol ? .02f : .026f, .003f, new Color(.025f,.03f,.035f));
-
-        if (pistol)
+        else if (type == WeaponType.SwordShield || type == WeaponType.DualDaggers)
         {
-            // Short slide, muzzle, grip panels and iron sights.
-            s.Box(new Vector3(0,.06f,.135f), new Vector3(.077f,.1f,.11f), Silver);
-            for (int i = 0; i < 5; i++)
-                s.Box(new Vector3(0,.066f,-.1f+i*.017f), new Vector3(.08f,.067f,.006f), Steel);
-            s.Box(new Vector3(0,-.244f,-.052f), new Vector3(.085f,.024f,.105f), Silver);
-            Sights(s, -.09f, .16f);
-            return;
-        }
-
-        // Shoulder stock and butt pad, visibly separate from the receiver.
-        float stockLength = smg ? .17f : .27f;
-        s.Box(new Vector3(0,-.01f,-receiverLength*.5f-stockLength*.5f),
-            new Vector3(.085f,smg ? .045f : .12f,stockLength), shotgun ? Wood : accent, new Vector3(-7,0,0));
-        s.Box(new Vector3(0,-.035f,-receiverLength*.5f-stockLength), new Vector3(.105f,.18f,.038f), Rubber);
-        if (shotgun)
-        {
-            // Twin tubes and ribbed pump make the shotgun identifiable at a glance.
-            s.Tube(new Vector3(0,-.015f,.43f), .024f, .55f, Dark);
-            s.Box(new Vector3(0,-.014f,.36f), new Vector3(.12f,.1f,.24f), Wood);
-            for (int i = 0; i < 7; i++)
-                s.Box(new Vector3(0,-.014f,.265f+i*.032f), new Vector3(.124f,.105f,.008f), Rubber);
-            for (int i = 0; i < 4; i++)
+            int count = type == WeaponType.DualDaggers ? 2 : 1;
+            for (int i = 0; i < count; i++)
             {
-                s.Tube(new Vector3(-.066f,.01f,-.13f+i*.055f), .018f, .08f, new Color(.65f,.13f,.09f), -1, Quaternion.Euler(90,0,0));
-                s.Tube(new Vector3(-.066f,.056f,-.13f+i*.055f), .019f, .014f, Brass, -1, Quaternion.Euler(90,0,0));
+                float x = count == 2 ? (i == 0 ? -.18f : .18f) : .2f;
+                s.Box(new Vector3(x, -.2f, 0), new Vector3(.075f, .28f, .075f), Wood);
+                s.Box(new Vector3(x, -.035f, 0), new Vector3(.28f, .045f, .09f), Brass);
+                s.Tube(new Vector3(x, .25f, 0), .075f, count == 2 ? .48f : .7f, Silver, .008f, Quaternion.Euler(-90, 0, 0));
             }
+            if (type == WeaponType.SwordShield)
+            {
+                s.Box(new Vector3(-.2f, .05f, 0), new Vector3(.4f, .62f, .09f), Steel);
+                s.Box(new Vector3(-.2f, .05f, -.055f), new Vector3(.28f, .45f, .025f), accent);
+                s.Box(new Vector3(-.2f, .05f, -.08f), new Vector3(.08f, .34f, .03f), Brass);
+            }
+        }
+        else if (type == WeaponType.Scythe)
+        {
+            s.Box(Vector3.zero, new Vector3(.065f, 1.1f, .065f), Wood);
+            for (int i = 0; i < 5; i++)
+                s.Box(new Vector3(-.08f - i * .10f, .5f - i * i * .013f, 0), new Vector3(.16f, .09f - i * .012f, .04f), Silver, new Vector3(0, 0, -i * 9));
+            s.Box(new Vector3(0, .42f, 0), new Vector3(.13f, .14f, .13f), accent);
+        }
+        else if (type == WeaponType.Longbow || type == WeaponType.RepeatingCrossbow)
+        {
+            bool crossbow = type == WeaponType.RepeatingCrossbow;
+            for (int side = -1; side <= 1; side += 2)
+                for (int i = 0; i < 3; i++)
+                {
+                    Vector3 pos = crossbow ? new Vector3(side * (.12f + i * .13f), 0, .16f + i * .07f) :
+                        new Vector3(.06f + i * i * .025f, side * (.12f + i * .16f), 0);
+                    s.Box(pos, crossbow ? new Vector3(.19f, .055f, .065f) : new Vector3(.055f, .22f, .055f), Wood,
+                        crossbow ? new Vector3(0, side * -23, 0) : new Vector3(0, 0, side * -18));
+                }
+            s.Box(crossbow ? new Vector3(0, 0, .08f) : Vector3.zero,
+                crossbow ? new Vector3(.10f, .10f, .72f) : new Vector3(.08f, .2f, .08f), accent);
+            s.Box(crossbow ? new Vector3(0, 0, .30f) : new Vector3(.20f, 0, 0),
+                crossbow ? new Vector3(.86f, .008f, .008f) : new Vector3(.008f, 1f, .008f), Silver);
+            s.Tube(new Vector3(0, .05f, .25f), .018f, .8f, Brass, .001f);
         }
         else
         {
-            float foreLength = smg ? .12f : sniper ? .28f : .27f;
-            s.Box(new Vector3(0,.045f,.19f+foreLength*.5f), new Vector3(.115f,.1f,foreLength), accent);
-            for (int i = 0; i < (smg ? 3 : 6); i++)
-                s.Box(new Vector3(0,.048f,.22f+i*.038f), new Vector3(.119f,.039f,.016f), Dark);
-            if (lmg)
+            // Four staves have distinct crowns; the focus is a floating mechanical crystal.
+            bool focus = type == WeaponType.ArcaneFocus;
+            if (!focus) s.Box(new Vector3(0, -.1f, 0), new Vector3(.075f, .9f, .075f), Wood);
+            s.Box(new Vector3(0, focus ? .05f : .47f, 0), new Vector3(.22f, .3f, .18f), accent, new Vector3(0, 0, 45));
+            if (type == WeaponType.LightStaff)
             {
-                s.Box(new Vector3(0,-.16f,.075f), new Vector3(.23f,.23f,.2f), Olive);
-                s.Box(new Vector3(0,-.28f,.075f), new Vector3(.24f,.025f,.21f), Dark);
-                for (int i = 0; i < 6; i++)
-                    s.Tube(new Vector3(-.07f-i*.022f,.005f,.02f), .012f, .085f, Brass);
-                s.Box(new Vector3(0,.22f,-.015f), new Vector3(.04f,.035f,.21f), Rubber);
-                for (int i = -1; i <= 1; i+=2)
-                    s.Box(new Vector3(0,.16f,-.015f+i*.09f), new Vector3(.03f,.1f,.025f), Steel);
+                s.Box(new Vector3(0, .47f, -.11f), new Vector3(.06f, .3f, .04f), Silver);
+                s.Box(new Vector3(0, .47f, -.11f), new Vector3(.3f, .06f, .04f), Silver);
             }
+            else if (type == WeaponType.FireStaff)
+                for (int i = -1; i <= 1; i++)
+                    s.Tube(new Vector3(i * .12f, .62f, 0), .06f, .26f, Brass, .001f, Quaternion.Euler(-90, 0, i * 20));
+            else if (type == WeaponType.FrostStaff)
+                for (int i = 0; i < 3; i++)
+                    s.Box(new Vector3(0, .47f, 0), new Vector3(.45f, .035f, .05f), Silver, new Vector3(0, 0, i * 60));
             else
-            {
-                s.Box(new Vector3(0,-.12f,.095f), new Vector3(.075f,sniper ? .11f : .23f,smg ? .065f : .1f), Dark, new Vector3(smg ? 0 : -12,0,0));
-                if (!sniper)
-                    s.Box(new Vector3(0,-.245f,.121f), new Vector3(.087f,.035f,smg ? .076f : .11f), accent);
-            }
+                for (int side = -1; side <= 1; side += 2)
+                    s.Box(new Vector3(side * .2f, .05f, 0), new Vector3(.07f, .42f, .12f), Brass, new Vector3(0, 0, side * 18));
+            if (!focus) s.Box(new Vector3(0, -.32f, 0), new Vector3(.10f, .25f, .10f), Dark);
         }
-        if (sniper)
+    }
+
+    static void Armor(Shape s, ArmorSlot slot)
+    {
+        if (slot == ArmorSlot.Helmet)
         {
-            for (int i = -1; i <= 1; i+=2)
-                s.Box(new Vector3(0,.16f,i*.105f), new Vector3(.055f,.085f,.04f), Dark);
-            s.Tube(new Vector3(0,.23f,0), .034f, .31f, Dark);
-            s.Tube(new Vector3(0,.23f,.17f), .06f, .1f, Steel);
-            s.Tube(new Vector3(0,.23f,-.17f), .046f, .08f, Rubber);
-            s.Tube(new Vector3(0,.23f,.222f), .049f, .004f, Glass);
-            s.Tube(new Vector3(0,.23f,-.212f), .035f, .004f, Glass);
-            s.Box(new Vector3(0,.28f,0), new Vector3(.05f,.06f,.05f), Steel);
+            s.Box(Vector3.zero, new Vector3(.45f, .32f, .35f), Steel);
+            s.Box(new Vector3(0, .2f, 0), new Vector3(.36f, .12f, .3f), Silver);
+            s.Box(new Vector3(0, -.02f, -.18f), new Vector3(.32f, .045f, .03f), Dark);
+            s.Box(new Vector3(0, .30f, 0), new Vector3(.05f, .15f, .28f), Brass);
         }
-        else Sights(s, -.12f, barrelEnd-.075f);
-        if (sniper || lmg)
-            for (int side = -1; side <= 1; side+=2)
-                s.Box(new Vector3(side*.065f,-.13f,barrelEnd-.17f), new Vector3(.022f,.28f,.03f), Steel, new Vector3(0,0,side*24));
-    }
-
-    static void Grip(Shape s, float z, Color c)
-    {
-        s.Box(new Vector3(0,-.135f,z), new Vector3(.076f,.22f,.09f), c, new Vector3(-14,0,0));
-        for (int i = 0; i < 4; i++)
-            s.Box(new Vector3(0,-.095f-i*.036f,z-.01f+i*.009f), new Vector3(.08f,.01f,.082f), Steel, new Vector3(-14,0,0));
-    }
-
-    static void Sights(Shape s, float back, float front)
-    {
-        s.Box(new Vector3(0,.14f,back), new Vector3(.062f,.04f,.022f), Dark);
-        s.Box(new Vector3(0,.125f,front), new Vector3(.02f,.067f,.025f), Dark);
-        s.Box(new Vector3(0,.16f,front), new Vector3(.014f,.01f,.015f), Glass);
+        else if (slot == ArmorSlot.Chest)
+        {
+            s.Box(Vector3.zero, new Vector3(.46f, .56f, .22f), Steel);
+            s.Box(new Vector3(0, .07f, -.13f), new Vector3(.25f, .24f, .04f), Brass);
+            for (int side = -1; side <= 1; side += 2)
+                s.Box(new Vector3(side * .3f, .22f, 0), new Vector3(.20f, .18f, .28f), Silver);
+        }
+        else
+        {
+            for (int side = -1; side <= 1; side += 2)
+            {
+                s.Box(new Vector3(side * .13f, 0, 0), new Vector3(.21f, slot == ArmorSlot.Pants ? .58f : .30f, .2f), slot == ArmorSlot.Pants ? Steel : Wood);
+                s.Box(new Vector3(side * .13f, -.12f, -.07f), new Vector3(.22f, .12f, .25f), Silver);
+            }
+            if (slot == ArmorSlot.Pants) s.Box(new Vector3(0, .27f, 0), new Vector3(.50f, .08f, .24f), Brass);
+        }
     }
 
     static void MedicalKit(Shape s)
@@ -208,14 +216,14 @@ public static class ItemAppearance
 
         public void Box(Vector3 center, Vector3 size, Color color, Vector3 euler = default)
         {
+            const float grid = .0125f;
+            center = new Vector3(Mathf.Round(center.x / grid), Mathf.Round(center.y / grid), Mathf.Round(center.z / grid)) * grid;
+            size = new Vector3(Mathf.Max(1, Mathf.Round(size.x / grid)), Mathf.Max(1, Mathf.Round(size.y / grid)), Mathf.Max(1, Mathf.Round(size.z / grid))) * grid;
             Quaternion rotation = Quaternion.Euler(euler);
             Vector3 h = size*.5f;
-            float b = Mathf.Min(.012f, Mathf.Min(size.x,Mathf.Min(size.y,size.z))*.2f);
             Vector2[] outline = {
-                new Vector2(-h.x+b,-h.y), new Vector2(h.x-b,-h.y),
-                new Vector2(h.x,-h.y+b), new Vector2(h.x,h.y-b),
-                new Vector2(h.x-b,h.y), new Vector2(-h.x+b,h.y),
-                new Vector2(-h.x,h.y-b), new Vector2(-h.x,-h.y+b)
+                new Vector2(-h.x,-h.y), new Vector2(h.x,-h.y),
+                new Vector2(h.x,h.y), new Vector2(-h.x,h.y)
             };
             for (int i = 0; i < outline.Length; i++)
             {
@@ -235,10 +243,10 @@ public static class ItemAppearance
         {
             if (rotation == default(Quaternion)) rotation = Quaternion.identity;
             if (endRadius < 0) endRadius = radius;
-            const int sides = 12;
+            const int sides = 4;
             for (int i = 0; i < sides; i++)
             {
-                float a = i*Mathf.PI*2/sides, b = (i+1)*Mathf.PI*2/sides;
+                float a = (i+.5f)*Mathf.PI*2/sides, b = (i+1.5f)*Mathf.PI*2/sides;
                 Vector3 p = center+rotation*new Vector3(Mathf.Cos(a)*radius,Mathf.Sin(a)*radius,-length*.5f);
                 Vector3 q = center+rotation*new Vector3(Mathf.Cos(b)*radius,Mathf.Sin(b)*radius,-length*.5f);
                 Vector3 r = center+rotation*new Vector3(Mathf.Cos(b)*endRadius,Mathf.Sin(b)*endRadius,length*.5f);

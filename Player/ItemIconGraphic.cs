@@ -61,7 +61,9 @@ public class ItemIconGraphic : MaskableGraphic
                 Vector3 p = (vertices[index]-bounds.center)*scale;
                 Color tint = colors[index]*shade;
                 tint.a = 1;
-                vh.AddVert(new Vector3(p.x+rect.center.x,p.y+rect.center.y,0),tint,Vector2.zero);
+                const float pixel = 3f;
+                vh.AddVert(new Vector3(Mathf.Round((p.x+rect.center.x)/pixel)*pixel,
+                    Mathf.Round((p.y+rect.center.y)/pixel)*pixel,0),tint,Vector2.zero);
             }
             vh.AddTriangle(start,start+1,start+2);
         }

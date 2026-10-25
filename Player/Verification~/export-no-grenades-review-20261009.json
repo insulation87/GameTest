@@ -1,0 +1,16 @@
+﻿{
+    "Result":  "PASS",
+    "Export":  "D:\\GameTest3\\GameTest\\Builds\\Windows64-20261009-NoGrenades",
+    "Archive":  "D:\\GameTest3\\GameTest\\Builds\\GameTest-Windows64-20261009-NoGrenades.zip",
+    "ArchiveSHA256":  "97260A256323D35D03FA7A655CA94B35F2F51ED846076A2AA88AE7027B8D38E2",
+    "ArchiveBytes":  98381508,
+    "RuntimeFiles":  190,
+    "RuntimeBytes":  261523704,
+    "StartupPID":  8332,
+    "StartupExecutable":  "C:\\Users\\User\\AppData\\Local\\Temp\\GameTest-UnzipReview-d30c5c10dd3b4596a638c25cd8996eb0\\GameTest\\GameTest.exe",
+    "StartupLog":  "D:\\GameTest3\\GameTest\\Assets\\Script\\Player\\Verification~\\export-no-grenades-startup-20261009.log",
+    "StartupStartedUTC":  "2026-10-09T03:24:50.7452404Z",
+    "ReleaseInstrumentationExcluded":  true,
+    "StartupSeconds":  165.6,
+    "StartupResult":  "Exact ZIP extraction started normally with D3D11; no logged exceptions, missing scripts, or startup errors."
+}
